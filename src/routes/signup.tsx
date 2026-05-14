@@ -25,7 +25,13 @@ import {
   EyeOff,
   Check,
   X,
+  ShieldAlert,
 } from "lucide-react";
+import {
+  InputOTP,
+  InputOTPGroup,
+  InputOTPSlot,
+} from "@/components/ui/input-otp";
 
 export const Route = createFileRoute("/signup")({
   head: () => ({ meta: [{ title: "Create account — Ecom CRM" }] }),
@@ -84,6 +90,8 @@ function SignupPage() {
   const [touched, setTouched] = useState<{ [k: string]: boolean }>({});
   const [loading, setLoading] = useState(false);
   const [resending, setResending] = useState(false);
+  const [otpCode, setOtpCode] = useState("");
+  const [verifying, setVerifying] = useState(false);
 
   const { score, checks } = useMemo(() => evaluatePassword(password), [password]);
 
@@ -129,14 +137,31 @@ function SignupPage() {
 
   const onResend = async () => {
     setResending(true);
-    // Stub — wire to a real /auth/resend-verification when available
-    await new Promise((r) => setTimeout(r, 700));
-    setResending(false);
-    toast.success(`Verification email re-sent to ${email}`);
+    try {
+      await resendOtp(email);
+      toast.success(`Verification email re-sent to ${email}`);
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || "Failed to resend code");
+    } finally {
+      setResending(false);
+    }
   };
 
-  const onConfirmVerified = () => {
-    setStage("success");
+  const onVerify = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (otpCode.length < 6) {
+      toast.error("Please enter the complete 6-digit code");
+      return;
+    }
+    setVerifying(true);
+    try {
+      await verifyOtp(email, otpCode);
+      setStage("success");
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || "Invalid or expired code");
+    } finally {
+      setVerifying(false);
+    }
   };
 
   return (
@@ -454,14 +479,41 @@ function SignupPage() {
                 </p>
               </div>
 
-              <div className="space-y-2">
-                <Button onClick={onConfirmVerified} className="w-full" size="lg">
-                  I've verified my email
-                  <ArrowRight className="ml-2 h-4 w-4" />
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Verification Code</Label>
+                  <InputOTP
+                    maxLength={6}
+                    value={otpCode}
+                    onChange={setOtpCode}
+                    onComplete={() => onVerify()}
+                  >
+                    <InputOTPGroup className="w-full justify-between">
+                      <InputOTPSlot index={0} className="h-12 w-12 text-lg" />
+                      <InputOTPSlot index={1} className="h-12 w-12 text-lg" />
+                      <InputOTPSlot index={2} className="h-12 w-12 text-lg" />
+                      <InputOTPSlot index={3} className="h-12 w-12 text-lg" />
+                      <InputOTPSlot index={4} className="h-12 w-12 text-lg" />
+                      <InputOTPSlot index={5} className="h-12 w-12 text-lg" />
+                    </InputOTPGroup>
+                  </InputOTP>
+                  <p className="text-[11px] text-muted-foreground">
+                    Check your email console for the 6-digit verification code.
+                  </p>
+                </div>
+
+                <Button onClick={() => onVerify()} className="w-full" size="lg" disabled={verifying || otpCode.length < 6}>
+                  {verifying ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <ShieldCheck className="mr-2 h-4 w-4" />
+                  )}
+                  Verify account
                 </Button>
+
                 <Button
                   type="button"
-                  variant="outline"
+                  variant="ghost"
                   className="w-full"
                   onClick={onResend}
                   disabled={resending}
@@ -471,7 +523,7 @@ function SignupPage() {
                   ) : (
                     <RefreshCw className="mr-2 h-4 w-4" />
                   )}
-                  Resend verification email
+                  Resend code
                 </Button>
               </div>
 

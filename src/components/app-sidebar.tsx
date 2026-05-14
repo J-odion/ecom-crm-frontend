@@ -13,6 +13,7 @@ import {
   UserCog,
   Settings,
   Package,
+  MapPin,
 } from "lucide-react";
 import {
   Sidebar,
@@ -56,6 +57,7 @@ const NAV: { group: string; items: NavItem[] }[] = [
       { to: "/deliveries", label: "Deliveries", icon: Truck, roles: ["logistics", "delivery_agent", "admin"] },
       { to: "/inventory", label: "Inventory", icon: Boxes, roles: ["admin", "logistics"] },
       { to: "/products", label: "Products", icon: Package, roles: ["admin", "logistics", "customer_service", "sales_agent"] },
+      { to: "/locations", label: "Locations", icon: MapPin, roles: ["admin", "logistics"] },
     ],
   },
   {

@@ -18,6 +18,7 @@ import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedProductsRouteImport } from './routes/_authenticated/products'
 import { Route as AuthenticatedOrdersRouteImport } from './routes/_authenticated/orders'
 import { Route as AuthenticatedMediaBuyerRouteImport } from './routes/_authenticated/media-buyer'
+import { Route as AuthenticatedLocationsRouteImport } from './routes/_authenticated/locations'
 import { Route as AuthenticatedLeadsRouteImport } from './routes/_authenticated/leads'
 import { Route as AuthenticatedInventoryRouteImport } from './routes/_authenticated/inventory'
 import { Route as AuthenticatedFinanceRouteImport } from './routes/_authenticated/finance'
@@ -70,6 +71,11 @@ const AuthenticatedOrdersRoute = AuthenticatedOrdersRouteImport.update({
 const AuthenticatedMediaBuyerRoute = AuthenticatedMediaBuyerRouteImport.update({
   id: '/media-buyer',
   path: '/media-buyer',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedLocationsRoute = AuthenticatedLocationsRouteImport.update({
+  id: '/locations',
+  path: '/locations',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedLeadsRoute = AuthenticatedLeadsRouteImport.update({
@@ -130,6 +136,7 @@ export interface FileRoutesByFullPath {
   '/finance': typeof AuthenticatedFinanceRoute
   '/inventory': typeof AuthenticatedInventoryRoute
   '/leads': typeof AuthenticatedLeadsRouteWithChildren
+  '/locations': typeof AuthenticatedLocationsRoute
   '/media-buyer': typeof AuthenticatedMediaBuyerRoute
   '/orders': typeof AuthenticatedOrdersRouteWithChildren
   '/products': typeof AuthenticatedProductsRoute
@@ -149,6 +156,7 @@ export interface FileRoutesByTo {
   '/finance': typeof AuthenticatedFinanceRoute
   '/inventory': typeof AuthenticatedInventoryRoute
   '/leads': typeof AuthenticatedLeadsRouteWithChildren
+  '/locations': typeof AuthenticatedLocationsRoute
   '/media-buyer': typeof AuthenticatedMediaBuyerRoute
   '/orders': typeof AuthenticatedOrdersRouteWithChildren
   '/products': typeof AuthenticatedProductsRoute
@@ -170,6 +178,7 @@ export interface FileRoutesById {
   '/_authenticated/finance': typeof AuthenticatedFinanceRoute
   '/_authenticated/inventory': typeof AuthenticatedInventoryRoute
   '/_authenticated/leads': typeof AuthenticatedLeadsRouteWithChildren
+  '/_authenticated/locations': typeof AuthenticatedLocationsRoute
   '/_authenticated/media-buyer': typeof AuthenticatedMediaBuyerRoute
   '/_authenticated/orders': typeof AuthenticatedOrdersRouteWithChildren
   '/_authenticated/products': typeof AuthenticatedProductsRoute
@@ -191,6 +200,7 @@ export interface FileRouteTypes {
     | '/finance'
     | '/inventory'
     | '/leads'
+    | '/locations'
     | '/media-buyer'
     | '/orders'
     | '/products'
@@ -210,6 +220,7 @@ export interface FileRouteTypes {
     | '/finance'
     | '/inventory'
     | '/leads'
+    | '/locations'
     | '/media-buyer'
     | '/orders'
     | '/products'
@@ -230,6 +241,7 @@ export interface FileRouteTypes {
     | '/_authenticated/finance'
     | '/_authenticated/inventory'
     | '/_authenticated/leads'
+    | '/_authenticated/locations'
     | '/_authenticated/media-buyer'
     | '/_authenticated/orders'
     | '/_authenticated/products'
@@ -309,6 +321,13 @@ declare module '@tanstack/react-router' {
       path: '/media-buyer'
       fullPath: '/media-buyer'
       preLoaderRoute: typeof AuthenticatedMediaBuyerRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/locations': {
+      id: '/_authenticated/locations'
+      path: '/locations'
+      fullPath: '/locations'
+      preLoaderRoute: typeof AuthenticatedLocationsRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/leads': {
@@ -407,6 +426,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedFinanceRoute: typeof AuthenticatedFinanceRoute
   AuthenticatedInventoryRoute: typeof AuthenticatedInventoryRoute
   AuthenticatedLeadsRoute: typeof AuthenticatedLeadsRouteWithChildren
+  AuthenticatedLocationsRoute: typeof AuthenticatedLocationsRoute
   AuthenticatedMediaBuyerRoute: typeof AuthenticatedMediaBuyerRoute
   AuthenticatedOrdersRoute: typeof AuthenticatedOrdersRouteWithChildren
   AuthenticatedProductsRoute: typeof AuthenticatedProductsRoute
@@ -422,6 +442,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedFinanceRoute: AuthenticatedFinanceRoute,
   AuthenticatedInventoryRoute: AuthenticatedInventoryRoute,
   AuthenticatedLeadsRoute: AuthenticatedLeadsRouteWithChildren,
+  AuthenticatedLocationsRoute: AuthenticatedLocationsRoute,
   AuthenticatedMediaBuyerRoute: AuthenticatedMediaBuyerRoute,
   AuthenticatedOrdersRoute: AuthenticatedOrdersRouteWithChildren,
   AuthenticatedProductsRoute: AuthenticatedProductsRoute,

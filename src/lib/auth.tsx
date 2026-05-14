@@ -15,7 +15,9 @@ interface AuthContextValue {
   token: string | null;
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<AuthUser>;
-  signup: (email: string, password: string) => Promise<AuthUser>;
+  signup: (email: string, password: string) => Promise<any>;
+  verifyOtp: (email: string, code: string) => Promise<AuthUser>;
+  resendOtp: (email: string) => Promise<void>;
   logout: () => void;
   setRoleOverride: (role: Role) => void;
 }
@@ -77,19 +79,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signup = useCallback(async (email: string, password: string) => {
     const { data } = await api.post("/auth/signup", { email, password });
-    const t: string =
-      data?.access_token || data?.token || data?.accessToken || data?.jwt;
-    if (t) {
-      setToken(t);
-      const u = decodeUser(t, { email, ...(data?.user || {}) });
-      setStoredUser(u);
-      setTokenState(t);
-      setUser(u);
-      return u;
-    }
-    // signup may not auto-login — fall back to logging in
-    return await login(email, password);
-  }, [login]);
+    return data;
+  }, []);
+
+  const verifyOtp = useCallback(async (email: string, code: string) => {
+    const { data } = await api.post("/auth/verify-otp", { email, code });
+    const t: string = data?.access_token || data?.token || data?.accessToken || data?.jwt;
+    if (!t) throw new Error("No token returned after verification");
+    setToken(t);
+    const u = decodeUser(t, { email, ...(data?.user || {}) });
+    setStoredUser(u);
+    setTokenState(t);
+    setUser(u);
+    return u;
+  }, []);
+
+  const resendOtp = useCallback(async (email: string) => {
+    await api.post("/auth/resend-otp", { email });
+  }, []);
 
   const logout = useCallback(() => {
     setToken(null);
@@ -114,10 +121,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       isAuthenticated: !!token,
       login,
       signup,
+      verifyOtp,
+      resendOtp,
       logout,
       setRoleOverride,
     }),
-    [user, token, login, signup, logout, setRoleOverride],
+    [user, token, login, signup, verifyOtp, resendOtp, logout, setRoleOverride],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

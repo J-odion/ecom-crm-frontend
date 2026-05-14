@@ -68,3 +68,55 @@ export const ROLE_LABEL: Record<Role, string> = {
   delivery_agent: "Delivery Agent",
   management: "Management",
 };
+
+export const apiActions = {
+  auth: {
+    login: (d: any) => api.post("/auth/login", d),
+    signup: (d: any) => api.post("/auth/signup", d),
+    verifyOtp: (email: string, code: string) => api.post("/auth/verify-otp", { email, code }),
+    resendOtp: (email: string) => api.post("/auth/resend-otp", { email }),
+  },
+  users: {
+    list: () => api.get("/users"),
+    update: (id: string, d: any) => api.patch(`/users/${id}`, d),
+    delete: (id: string) => api.delete(`/users/${id}`),
+  },
+  locations: {
+    list: () => api.get("/locations"),
+    create: (d: any) => api.post("/locations", d),
+    update: (id: string, d: any) => api.patch(`/locations/${id}`, d),
+    delete: (id: string) => api.delete(`/locations/${id}`),
+  },
+  leads: {
+    list: () => api.get("/leads"),
+    get: (id: string) => api.get(`/leads/${id}`),
+    assign: (id: string, agentId: string) => api.patch(`/leads/${id}/assign`, { agentId }),
+    create: (d: any) => api.post("/leads", d),
+  },
+  orders: {
+    list: () => api.get("/orders"),
+    get: (id: string) => api.get(`/orders/${id}`),
+    create: (d: any) => api.post("/orders", d),
+    updateDelivery: (id: string, d: any) => api.patch(`/orders/${id}/delivery-status`, d),
+    updatePayment: (id: string, d: any) => api.patch(`/orders/${id}/payment-status`, d),
+    cancel: (id: string) => api.patch(`/orders/${id}/cancel`, {}),
+  },
+  inventory: {
+    products: () => api.get("/inventory/products"),
+    createProduct: (d: any) => api.post("/inventory/products", d),
+    stockIn: (d: any) => api.post("/inventory/in", d),
+    transfer: (d: any) => api.post("/inventory/transfer", d),
+  },
+  logistics: {
+    deliveries: () => api.get("/logistics/deliveries"),
+    assign: (d: any) => api.post("/logistics/deliveries/assign", d),
+    updateStatus: (id: string, d: any) => api.patch(`/logistics/deliveries/${id}/status`, d),
+  },
+  analytics: {
+    dashboard: () => api.get("/analytics/dashboard"),
+    performance: () => api.get("/media-buyers/performance"),
+  },
+  commissions: {
+    rules: () => api.get("/commission-rules"),
+  }
+};

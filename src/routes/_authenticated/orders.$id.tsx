@@ -11,7 +11,7 @@ import { useAuth } from "@/lib/auth";
 import { CallButton, WhatsAppButton, CopyOrderButton } from "@/components/contact-buttons";
 import { toast } from "sonner";
 import { useState } from "react";
-import { Loader2, ArrowLeft } from "lucide-react";
+import { Loader2, ArrowLeft, Wallet } from "lucide-react";
 import { OrderStatusTimeline } from "@/components/order-status-timeline";
 import { RoleGate } from "@/components/role-gate";
 
@@ -116,6 +116,25 @@ function OrderDetail() {
             </div>
           </CardContent>
         </Card>
+
+        <RoleGate allowedRoles={["accountant", "admin"]}>
+          <Card className="mb-6 border-primary/20 bg-primary/5">
+            <CardHeader><CardTitle className="text-primary flex items-center gap-2"><Wallet className="h-4 w-4" /> Financial Breakdown</CardTitle></CardHeader>
+            <CardContent className="space-y-3 text-sm">
+              <Detail k="Revenue (Total)" v={`₦${Number(order.amount || 0).toLocaleString()}`} />
+              <Detail k="Buying Cost (COGS)" v={`- ₦${Number(order.cogs || order.productCost || 0).toLocaleString()}`} />
+              <Detail k="Delivery Fee" v={`- ₦${Number(order.delivery_fee || 0).toLocaleString()}`} />
+              <div className="border-t border-primary/20 pt-2 mt-2">
+                <div className="flex justify-between items-center">
+                  <span className="font-semibold text-primary">NET PROFIT</span>
+                  <span className="text-lg font-bold text-primary">
+                    ₦{Number((order.amount || 0) - (order.cogs || 0) - (order.delivery_fee || 0)).toLocaleString()}
+                  </span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </RoleGate>
 
         <div className="space-y-4">
           <RoleGate allowedRoles={["logistics", "delivery_agent", "admin"]}>
