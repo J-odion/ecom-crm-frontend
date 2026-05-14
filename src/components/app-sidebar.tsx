@@ -14,6 +14,7 @@ import {
   Settings,
   Package,
   MapPin,
+  Code2,
 } from "lucide-react";
 import {
   Sidebar,
@@ -47,6 +48,7 @@ const NAV: { group: string; items: NavItem[] }[] = [
     group: "Sales",
     items: [
       { to: "/leads", label: "Leads", icon: ClipboardList, roles: ["customer_service", "admin", "sales_agent"] },
+      { to: "/lead-forms", label: "Lead Forms", icon: Code2, roles: ["admin"] },
       { to: "/orders", label: "Orders", icon: ShoppingCart, roles: "all" },
       { to: "/media-buyer", label: "Media Buyer", icon: Megaphone, roles: ["sales_agent", "admin"] },
     ],

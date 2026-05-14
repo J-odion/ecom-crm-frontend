@@ -104,10 +104,20 @@ export const apiActions = {
     delete: (id: string) => api.delete(`/locations/${id}`),
   },
   leads: {
-    list: () => api.get("/leads"),
+    list: (params?: any) => api.get("/leads", { params }),
     get: (id: string) => api.get(`/leads/${id}`),
     assign: (id: string, agentId: string) => api.patch(`/leads/${id}/assign`, { agentId }),
     create: (d: any) => api.post("/leads", d),
+    partial: (d: any) => api.post("/leads/partial", d),
+    webhook: (d: any) => api.post("/leads/webhook", d),
+  },
+  leadForms: {
+    list: () => api.get("/lead-forms"),
+    get: (id: string) => api.get(`/lead-forms/${id}`),
+    create: (d: any) => api.post("/lead-forms", d),
+    update: (id: string, d: any) => api.patch(`/lead-forms/${id}`, d),
+    delete: (id: string) => api.delete(`/lead-forms/${id}`),
+    getIframe: (id: string) => `${API_BASE}/lead-forms/${id}/embed`,
   },
   orders: {
     list: () => api.get("/orders"),
