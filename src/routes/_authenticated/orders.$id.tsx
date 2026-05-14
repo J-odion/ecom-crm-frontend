@@ -49,7 +49,7 @@ function OrderDetail() {
       toast.success(`Marked ${status}`);
       invalidate();
     },
-    onError: (e: any) => toast.error(e?.response?.data?.message || "Failed to update"),
+    onError: (e: any) => toast.error(e.friendlyMessage || "Failed to update"),
   });
 
   const remit = useMutation({
@@ -59,7 +59,7 @@ function OrderDetail() {
       toast.success("Payment status updated");
       invalidate();
     },
-    onError: (e: any) => toast.error(e?.response?.data?.message || "Failed"),
+    onError: (e: any) => toast.error(e.friendlyMessage || "Failed"),
   });
 
   const cancel = useMutation({
@@ -68,7 +68,7 @@ function OrderDetail() {
       toast.success("Order cancelled");
       invalidate();
     },
-    onError: (e: any) => toast.error(e?.response?.data?.message || "Failed"),
+    onError: (e: any) => toast.error(e.friendlyMessage || "Failed"),
   });
 
   if (isLoading) {

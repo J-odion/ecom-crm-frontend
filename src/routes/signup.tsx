@@ -129,7 +129,7 @@ function SignupPage() {
       // After successful signup, route to email verification step.
       setStage("verify");
     } catch (err: any) {
-      toast.error(err?.response?.data?.message || err?.message || "Signup failed");
+      toast.error(err.friendlyMessage || "Signup failed");
     } finally {
       setLoading(false);
     }
@@ -141,7 +141,7 @@ function SignupPage() {
       await resendOtp(email);
       toast.success(`Verification email re-sent to ${email}`);
     } catch (err: any) {
-      toast.error(err?.response?.data?.message || "Failed to resend code");
+      toast.error(err.friendlyMessage || "Failed to resend code");
     } finally {
       setResending(false);
     }
@@ -158,7 +158,7 @@ function SignupPage() {
       await verifyOtp(email, otpCode);
       setStage("success");
     } catch (err: any) {
-      toast.error(err?.response?.data?.message || "Invalid or expired code");
+      toast.error(err.friendlyMessage || "Invalid or expired code");
     } finally {
       setVerifying(false);
     }

@@ -111,7 +111,7 @@ function SpendLogCard({ onDone }: { onDone: () => void }) {
       setForm({ ...form, amount_spent: "", amount_received: "", product: "" });
       onDone();
     },
-    onError: (e: any) => toast.error(e?.response?.data?.message || "Failed"),
+    onError: (e: any) => toast.error(e.friendlyMessage || "Failed"),
   });
 
   const balance = (Number(form.amount_received) || 0) - (Number(form.amount_spent) || 0);

@@ -115,7 +115,7 @@ export function NewProductDialog({
       setForm({ name: "", sku: "", stock: 0, cost: "", price: "", description: "" });
       onDone();
     },
-    onError: (e: any) => toast.error(e?.response?.data?.message || "Failed"),
+    onError: (e: any) => toast.error(e.friendlyMessage || "Failed"),
   });
 
   return (
@@ -156,7 +156,7 @@ function StockInDialog({ items, onDone }: { items: any[]; onDone: () => void }) 
       setForm({ productId: "", quantity: 0, notes: "" });
       onDone();
     },
-    onError: (e: any) => toast.error(e?.response?.data?.message || "Failed"),
+    onError: (e: any) => toast.error(e.friendlyMessage || "Failed"),
   });
 
   return (

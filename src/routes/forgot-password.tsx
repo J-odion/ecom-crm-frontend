@@ -47,7 +47,7 @@ function ForgotPasswordPage() {
       toast.success("Recovery code sent to your email");
       setStage("reset");
     } catch (err: any) {
-      toast.error(err?.response?.data?.message || "Failed to send recovery code");
+      toast.error(err.friendlyMessage || "Failed to send recovery code");
     } finally {
       setLoading(false);
     }
@@ -73,7 +73,7 @@ function ForgotPasswordPage() {
       toast.success("Password reset successfully");
       setStage("success");
     } catch (err: any) {
-      toast.error(err?.response?.data?.message || "Invalid code or reset failed");
+      toast.error(err.friendlyMessage || "Invalid code or reset failed");
     } finally {
       setLoading(false);
     }

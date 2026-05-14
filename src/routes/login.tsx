@@ -16,6 +16,8 @@ import {
   TrendingUp,
   Users,
   Package,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 
 export const Route = createFileRoute("/login")({
@@ -37,6 +39,7 @@ function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showPw, setShowPw] = useState(false);
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -46,7 +49,7 @@ function LoginPage() {
       toast.success("Welcome back");
       navigate({ to: "/dashboard" });
     } catch (err: any) {
-      toast.error(err?.response?.data?.message || err?.message || "Login failed");
+      toast.error(err.friendlyMessage || "Login failed");
     } finally {
       setLoading(false);
     }
@@ -173,16 +176,26 @@ function LoginPage() {
               <div className="flex flex-col gap-1.5">
                 <div className="flex items-center justify-between">
                   <Label htmlFor="password">Password</Label>
-                  <Link
-                    to="/forgot-password"
-                    className="text-xs font-medium text-primary hover:underline"
-                  >
-                    Forgot password?
-                  </Link>
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setShowPw((v) => !v)}
+                      className="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground hover:text-primary"
+                    >
+                      {showPw ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
+                      {showPw ? "Hide" : "Show"}
+                    </button>
+                    <Link
+                      to="/forgot-password"
+                      className="text-xs font-medium text-primary hover:underline"
+                    >
+                      Forgot password?
+                    </Link>
+                  </div>
                 </div>
                 <Input
                   id="password"
-                  type="password"
+                  type={showPw ? "text" : "password"}
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}

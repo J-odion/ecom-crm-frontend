@@ -115,7 +115,7 @@ function UserRow({ user, locations, onUpdate }: { user: any; locations: any[]; o
       setIsEditing(false);
       onUpdate();
     },
-    onError: (err: any) => toast.error(err?.response?.data?.message || "Failed to update"),
+    onError: (e: any) => toast.error(e.friendlyMessage || "Failed to update"),
   });
 
   const remove = useMutation({
@@ -124,7 +124,7 @@ function UserRow({ user, locations, onUpdate }: { user: any; locations: any[]; o
       toast.success("User removed");
       onUpdate();
     },
-    onError: (err: any) => toast.error(err?.response?.data?.message || "Failed to remove"),
+    onError: (e: any) => toast.error(e.friendlyMessage || "Failed to remove"),
   });
 
   return (
@@ -218,7 +218,7 @@ function CreateUserDialog({ locations, onDone }: { locations: any[]; onDone: () 
       setForm({ name: "", email: "", password: "", role: "sales_agent", locationId: "none" });
       onDone();
     },
-    onError: (err: any) => toast.error(err?.response?.data?.message || "Failed to create"),
+    onError: (e: any) => toast.error(e.friendlyMessage || "Failed to create"),
   });
 
   return (

@@ -79,7 +79,7 @@ function LocationCard({ location }: { location: any }) {
       toast.success("Location deleted");
       qc.invalidateQueries({ queryKey: ["locations"] });
     },
-    onError: (err: any) => toast.error(err?.response?.data?.message || "Failed to delete"),
+    onError: (e: any) => toast.error(e.friendlyMessage || "Failed to delete"),
   });
 
   return (
@@ -144,7 +144,7 @@ function CreateLocationDialog({ onDone }: { onDone: () => void }) {
       setAddress("");
       onDone();
     },
-    onError: (err: any) => toast.error(err?.response?.data?.message || "Failed to create"),
+    onError: (e: any) => toast.error(e.friendlyMessage || "Failed to create"),
   });
 
   return (

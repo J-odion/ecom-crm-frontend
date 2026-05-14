@@ -1,11 +1,22 @@
 import axios from "axios";
 import { setupMockInterceptors } from "./mock-api";
 
-export const API_BASE =
-  (typeof import.meta !== "undefined" && (import.meta as any).env?.VITE_API_URL) ||
-  "https://ecom-api-erg7.onrender.com";
+export const API_BASE = import.meta.env.VITE_API_URL || "https://ecom-api-erg7.onrender.com";
 
 export const api = axios.create({ baseURL: API_BASE });
+
+// Global Error Logger for debugging & monitoring
+function logError(error: any) {
+  const meta = {
+    url: error.config?.url,
+    method: error.config?.method?.toUpperCase(),
+    status: error.response?.status,
+    message: error.response?.data?.message || error.message,
+    timestamp: new Date().toISOString(),
+  };
+  console.error("[API_ERROR]", meta);
+  return meta.message;
+}
 
 // DEV MOCK: Enable mock data for testing
 setupMockInterceptors(api);
@@ -42,10 +53,13 @@ api.interceptors.request.use((cfg) => {
 api.interceptors.response.use(
   (r) => r,
   (err) => {
+    const message = logError(err);
     if (err?.response?.status === 401 && typeof window !== "undefined") {
       setToken(null);
       setStoredUser(null);
     }
+    // Attach the user-friendly message to the error object for easy access in components
+    err.friendlyMessage = message;
     return Promise.reject(err);
   },
 );

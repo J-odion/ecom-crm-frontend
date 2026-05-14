@@ -120,7 +120,7 @@ function UpdateDeliveryStatusDialog({ id, currentStatus, onDone }: { id: string;
       setOpen(false);
       onDone();
     },
-    onError: (e: any) => toast.error(e?.response?.data?.message || "Failed"),
+    onError: (e: any) => toast.error(e.friendlyMessage || "Failed"),
   });
 
   const handleAction = (newStatus: string) => {
