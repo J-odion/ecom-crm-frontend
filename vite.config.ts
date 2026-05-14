@@ -3,6 +3,7 @@ import react from "@vitejs/plugin-react";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import tsconfigPaths from "vite-tsconfig-paths";
 import tailwindcss from "@tailwindcss/vite";
+import { nitro } from "nitro/vite";
 
 // TanStack Start 1.x Vite integration
 export default defineConfig({
@@ -15,6 +16,7 @@ export default defineConfig({
     react(),
     tailwindcss(),
     tsconfigPaths(),
+    nitro(),
   ],
   test: {
     globals: true,
