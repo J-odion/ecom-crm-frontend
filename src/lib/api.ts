@@ -75,6 +75,8 @@ export const apiActions = {
     signup: (d: any) => api.post("/auth/signup", d),
     verifyOtp: (email: string, code: string) => api.post("/auth/verify-otp", { email, code }),
     resendOtp: (email: string) => api.post("/auth/resend-otp", { email }),
+    forgotPassword: (email: string) => api.post("/auth/forgot-password", { email }),
+    resetPassword: (d: any) => api.post("/auth/reset-password", d),
   },
   users: {
     list: () => api.get("/users"),

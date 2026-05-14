@@ -18,6 +18,8 @@ interface AuthContextValue {
   signup: (email: string, password: string) => Promise<any>;
   verifyOtp: (email: string, code: string) => Promise<AuthUser>;
   resendOtp: (email: string) => Promise<void>;
+  forgotPassword: (email: string) => Promise<void>;
+  resetPassword: (d: any) => Promise<void>;
   logout: () => void;
   setRoleOverride: (role: Role) => void;
 }
@@ -98,6 +100,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await api.post("/auth/resend-otp", { email });
   }, []);
 
+  const forgotPassword = useCallback(async (email: string) => {
+    await api.post("/auth/forgot-password", { email });
+  }, []);
+
+  const resetPassword = useCallback(async (d: any) => {
+    await api.post("/auth/reset-password", d);
+  }, []);
+
   const logout = useCallback(() => {
     setToken(null);
     setStoredUser(null);
@@ -123,10 +133,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       signup,
       verifyOtp,
       resendOtp,
+      forgotPassword,
+      resetPassword,
       logout,
       setRoleOverride,
     }),
-    [user, token, login, signup, verifyOtp, resendOtp, logout, setRoleOverride],
+    [user, token, login, signup, verifyOtp, resendOtp, forgotPassword, resetPassword, logout, setRoleOverride],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
