@@ -9,7 +9,7 @@ export const Route = createFileRoute("/_authenticated")({
 
 // DEV BYPASS — set to false to re-enable the real auth guard.
 // Lets you browse every authenticated page without signing in while iterating on UI.
-const BYPASS_AUTH = true;
+const BYPASS_AUTH = false;
 
 function AuthLayout() {
   const { isAuthenticated } = useAuth();

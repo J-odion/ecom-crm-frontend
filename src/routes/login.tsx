@@ -49,6 +49,11 @@ function LoginPage() {
       toast.success("Welcome back");
       navigate({ to: "/dashboard" });
     } catch (err: any) {
+      if (err?.response?.status === 401 && err.friendlyMessage?.toLowerCase().includes("verify")) {
+        toast.info("Please verify your email to continue");
+        navigate({ to: "/verify", search: { email } });
+        return;
+      }
       toast.error(err.friendlyMessage || "Login failed");
     } finally {
       setLoading(false);

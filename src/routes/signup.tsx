@@ -126,8 +126,8 @@ function SignupPage() {
     setLoading(true);
     try {
       await signup(email, password);
-      // After successful signup, route to email verification step.
-      setStage("verify");
+      // Redirect to standalone verification page
+      navigate({ to: "/verify", search: { email } });
     } catch (err: any) {
       toast.error(err.friendlyMessage || "Signup failed");
     } finally {

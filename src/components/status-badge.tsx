@@ -14,6 +14,7 @@ const map: Record<string, string> = {
   failed: "bg-destructive/15 text-destructive border-destructive/30",
   cancelled: "bg-destructive/15 text-destructive border-destructive/30",
   discrepancy: "bg-destructive/15 text-destructive border-destructive/30",
+  partial: "bg-amber-100 text-amber-700 border-amber-200",
 };
 
 export function StatusBadge({ status }: { status?: string | null }) {

@@ -154,19 +154,23 @@ function LeadsPage() {
                         <td className="px-4 py-4">
                           <div className="flex flex-wrap gap-1">
                             {l.isDuplicate && (
-                              <Badge variant="outline" className="h-5 gap-1 border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-50">
+                              <Badge variant="outline" className="h-5 gap-1 border-amber-200 bg-amber-50 text-amber-700">
                                 <AlertCircle className="h-3 w-3" />
                                 Duplicate
                               </Badge>
                             )}
                             {l.isReturning && (
-                              <Badge variant="outline" className="h-5 gap-1 border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-50">
+                              <Badge variant="outline" className="h-5 gap-1 border-emerald-200 bg-emerald-50 text-emerald-700">
                                 <UserCheck className="h-3 w-3" />
                                 Returning
                               </Badge>
                             )}
                             {l.submissionCount > 1 && (
-                              <Badge variant="outline" className="h-5 gap-1 border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-50">
+                              <Badge 
+                                variant="outline" 
+                                className="h-5 gap-1 border-blue-200 bg-blue-50 text-blue-700 cursor-help"
+                                title={`User has submitted this form ${l.submissionCount} times`}
+                              >
                                 <Hash className="h-3 w-3" />
                                 {l.submissionCount}x
                               </Badge>

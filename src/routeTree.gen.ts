@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as VerifyRouteImport } from './routes/verify'
 import { Route as SignupRouteImport } from './routes/signup'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
@@ -31,6 +32,11 @@ import { Route as AuthenticatedAccountantRouteImport } from './routes/_authentic
 import { Route as AuthenticatedOrdersIdRouteImport } from './routes/_authenticated/orders.$id'
 import { Route as AuthenticatedLeadsIdRouteImport } from './routes/_authenticated/leads.$id'
 
+const VerifyRoute = VerifyRouteImport.update({
+  id: '/verify',
+  path: '/verify',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SignupRoute = SignupRouteImport.update({
   id: '/signup',
   path: '/signup',
@@ -142,6 +148,7 @@ export interface FileRoutesByFullPath {
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/signup': typeof SignupRoute
+  '/verify': typeof VerifyRoute
   '/accountant': typeof AuthenticatedAccountantRoute
   '/commission-rules': typeof AuthenticatedCommissionRulesRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
@@ -164,6 +171,7 @@ export interface FileRoutesByTo {
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/signup': typeof SignupRoute
+  '/verify': typeof VerifyRoute
   '/accountant': typeof AuthenticatedAccountantRoute
   '/commission-rules': typeof AuthenticatedCommissionRulesRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
@@ -188,6 +196,7 @@ export interface FileRoutesById {
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/signup': typeof SignupRoute
+  '/verify': typeof VerifyRoute
   '/_authenticated/accountant': typeof AuthenticatedAccountantRoute
   '/_authenticated/commission-rules': typeof AuthenticatedCommissionRulesRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
@@ -212,6 +221,7 @@ export interface FileRouteTypes {
     | '/forgot-password'
     | '/login'
     | '/signup'
+    | '/verify'
     | '/accountant'
     | '/commission-rules'
     | '/dashboard'
@@ -234,6 +244,7 @@ export interface FileRouteTypes {
     | '/forgot-password'
     | '/login'
     | '/signup'
+    | '/verify'
     | '/accountant'
     | '/commission-rules'
     | '/dashboard'
@@ -257,6 +268,7 @@ export interface FileRouteTypes {
     | '/forgot-password'
     | '/login'
     | '/signup'
+    | '/verify'
     | '/_authenticated/accountant'
     | '/_authenticated/commission-rules'
     | '/_authenticated/dashboard'
@@ -281,10 +293,18 @@ export interface RootRouteChildren {
   ForgotPasswordRoute: typeof ForgotPasswordRoute
   LoginRoute: typeof LoginRoute
   SignupRoute: typeof SignupRoute
+  VerifyRoute: typeof VerifyRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/verify': {
+      id: '/verify'
+      path: '/verify'
+      fullPath: '/verify'
+      preLoaderRoute: typeof VerifyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/signup': {
       id: '/signup'
       path: '/signup'
@@ -501,6 +521,7 @@ const rootRouteChildren: RootRouteChildren = {
   ForgotPasswordRoute: ForgotPasswordRoute,
   LoginRoute: LoginRoute,
   SignupRoute: SignupRoute,
+  VerifyRoute: VerifyRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
