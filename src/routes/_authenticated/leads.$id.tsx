@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiActions } from "@/lib/api";
 import { PageHeader } from "@/components/page-header";
@@ -25,6 +25,7 @@ import {
   History,
   ShieldAlert,
   Info,
+  Layout,
 } from "lucide-react";
 import { StatusBadge } from "@/components/status-badge";
 import { Badge } from "@/components/ui/badge";

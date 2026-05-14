@@ -315,7 +315,7 @@ function CreateFormDialog({ onDone }: { onDone: () => void }) {
                 <SelectValue placeholder="Select staff" />
               </SelectTrigger>
               <SelectContent>
-                {mediaBuyers.map((mb) => (
+                {mediaBuyers.map((mb: any) => (
                   <SelectItem key={mb.id || mb._id} value={mb.id || mb._id}>
                     {mb.email}
                   </SelectItem>
