@@ -15,7 +15,7 @@ interface AuthContextValue {
   token: string | null;
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<AuthUser>;
-  signup: (email: string, password: string) => Promise<any>;
+  signup: (email: string, password: string, fullName?: string) => Promise<any>;
   verifyOtp: (email: string, code: string) => Promise<AuthUser>;
   resendOtp: (email: string) => Promise<void>;
   forgotPassword: (email: string) => Promise<void>;
@@ -79,8 +79,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return u;
   }, []);
 
-  const signup = useCallback(async (email: string, password: string) => {
-    const { data } = await api.post("/auth/signup", { email, password });
+  const signup = useCallback(async (email: string, password: string, fullName?: string) => {
+    const { data } = await api.post("/auth/signup", { email, password, fullName });
     return data;
   }, []);
 

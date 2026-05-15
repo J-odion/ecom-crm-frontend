@@ -92,7 +92,7 @@ function SignupPage() {
     }
     setLoading(true);
     try {
-      await signup(email, password);
+      await signup(email, password, name);
       toast.success("Account created! Please verify your email.");
       navigate({ to: "/verify", search: { email } });
     } catch (err: any) {
