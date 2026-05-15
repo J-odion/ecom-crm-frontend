@@ -2,6 +2,7 @@ import axios from "axios";
 import { setupMockInterceptors } from "./mock-api";
 
 export const API_BASE = import.meta.env.VITE_API_URL || "https://ecom-api-erg7.onrender.com";
+console.log("[API] Base URL:", API_BASE);
 
 export const api = axios.create({ baseURL: API_BASE });
 
@@ -18,8 +19,10 @@ function logError(error: any) {
   return meta.message;
 }
 
-// DEV MOCK: Enable mock data for testing
-setupMockInterceptors(api);
+// DEV MOCK: Enable mock data only if VITE_DEV_MOCK is set to "true" in .env
+if (import.meta.env.VITE_DEV_MOCK === "true") {
+  setupMockInterceptors(api);
+}
 
 const TOKEN_KEY = "ecrm_token";
 const USER_KEY = "ecrm_user";

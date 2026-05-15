@@ -54,8 +54,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (t) {
       setTokenState(t);
       setUser(u || decodeUser(t));
-    } else {
-      // DEV BYPASS: Provide a mock admin user if no token is present
+    } else if (import.meta.env.VITE_DEV_MOCK === "true") {
+      // DEV MOCK: Provide a mock admin user if no token is present and MOCK is enabled
       setUser({
         id: "mock-admin",
         email: "admin@ecom.test",
