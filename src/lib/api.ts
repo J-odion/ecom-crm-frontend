@@ -2,19 +2,19 @@ import axios from "axios";
 import { setupMockInterceptors } from "./mock-api";
 
 export const API_BASE = import.meta.env.VITE_API_URL || "https://ecom-api-erg7.onrender.com";
-console.log("[API] Base URL:", API_BASE);
 
 export const api = axios.create({ baseURL: API_BASE });
 
-// Global Error Logger for debugging & monitoring
+// Global Error Logger - Sanitized for production privacy
 function logError(error: any) {
   const meta = {
-    url: error.config?.url,
+    url: error.config?.url?.split("?")[0], // Remove query params to avoid leaking data
     method: error.config?.method?.toUpperCase(),
     status: error.response?.status,
     message: error.response?.data?.message || error.message,
     timestamp: new Date().toISOString(),
   };
+  // Never log error.config itself as it contains the Authorization header
   console.error("[API_ERROR]", meta);
   return meta.message;
 }

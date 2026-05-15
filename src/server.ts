@@ -62,7 +62,7 @@ async function normalizeCatastrophicSsrResponse(response: Response): Promise<Res
     return response;
   }
 
-  console.error(consumeLastCapturedError() ?? new Error(`h3 swallowed SSR error: ${body}`));
+  console.error(consumeLastCapturedError() ?? new Error(`h3 swallowed SSR error: ${body.slice(0, 100)}...`));
   return brandedErrorResponse();
 }
 
