@@ -84,8 +84,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return data;
   }, []);
 
-  const verifyOtp = useCallback(async (email: string, code: string) => {
-    const { data } = await api.post("/auth/verify-otp", { email, code });
+  const verifyOtp = useCallback(async (email: string, otp: string) => {
+    const { data } = await api.post("/auth/verify-otp", { email, otp });
     const t: string = data?.access_token || data?.token || data?.accessToken || data?.jwt;
     if (!t) throw new Error("No token returned after verification");
     setToken(t);
