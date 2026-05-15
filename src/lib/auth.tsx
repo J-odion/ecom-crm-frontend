@@ -86,14 +86,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const verifyOtp = useCallback(async (email: string, otp: string) => {
     const { data } = await api.post("/auth/verify-otp", { email, otp });
+    
+    // If the backend returns a token, log them in (legacy/convenience)
     const t: string = data?.access_token || data?.token || data?.accessToken || data?.jwt;
-    if (!t) throw new Error("No token returned after verification");
-    setToken(t);
-    const u = decodeUser(t, { email, ...(data?.user || {}) });
-    setStoredUser(u);
-    setTokenState(t);
-    setUser(u);
-    return u;
+    if (t) {
+      setToken(t);
+      const u = decodeUser(t, { email, ...(data?.user || {}) });
+      setStoredUser(u);
+      setTokenState(t);
+      setUser(u);
+      return u;
+    }
+    
+    // Otherwise, just return the success data so the UI can redirect to /login
+    return data;
   }, []);
 
   const resendOtp = useCallback(async (email: string) => {

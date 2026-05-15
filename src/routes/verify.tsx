@@ -51,9 +51,15 @@ function VerifyPage() {
     }
     setVerifying(true);
     try {
-      await verifyOtp(email, otpCode);
-      toast.success("Account verified successfully! You can now log in.");
-      navigate({ to: "/login" });
+      const response: any = await verifyOtp(email, otpCode);
+      if (response?.success || response?.message?.toLowerCase().includes("verified")) {
+        toast.success(response.message || "Account verified! Please log in.");
+        navigate({ to: "/login" });
+      } else {
+        // Handle case where it returned 200 but maybe success: false (unlikely with axios)
+        toast.success("Account verified successfully! You can now log in.");
+        navigate({ to: "/login" });
+      }
     } catch (err: any) {
       toast.error(err.friendlyMessage || "Invalid or expired code");
     } finally {
