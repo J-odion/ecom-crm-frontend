@@ -82,7 +82,12 @@ function DeliveriesPage() {
                             </Link>
                           ) : "—"}
                         </td>
-                        <td className="px-4 py-3 text-xs">{d.deliveryAgentEmail || d.deliveryAgent?.email || d.deliveryAgentId || "—"}</td>
+                        <td className="px-4 py-3 text-xs">
+                          {d.deliveryAgent?.email || 
+                           d.deliveryAgentEmail || 
+                           (typeof d.deliveryAgentId === 'string' ? d.deliveryAgentId : d.deliveryAgentId?.email) || 
+                           "—"}
+                        </td>
                         <td className="px-4 py-3"><StatusBadge status={d.status} /></td>
                         <td className="px-4 py-3 text-right">
                           <UpdateDeliveryStatusDialog 

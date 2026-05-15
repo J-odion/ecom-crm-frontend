@@ -8,6 +8,9 @@ import {
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { RoleGate } from "@/components/role-gate";
+import { EmptyState } from "@/components/empty-state";
+import { ShieldAlert } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/settings")({
   head: () => ({ meta: [{ title: "Settings — Ecom CRM" }] }),
@@ -21,29 +24,45 @@ function SettingsPage() {
   return (
     <div>
       <PageHeader title="Settings" description="Account & workspace preferences." />
-      <div className="grid gap-4 lg:grid-cols-2">
-        <Card>
-          <CardHeader><CardTitle>Account</CardTitle></CardHeader>
-          <CardContent className="space-y-3 text-sm">
-            <Row k="Email" v={user?.email} />
-            <Row k="Role" v={user?.role ? ROLE_LABEL[user.role] : "—"} />
-            <Button variant="destructive" onClick={logout}>Sign out</Button>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader><CardTitle>Preview as role</CardTitle></CardHeader>
-          <CardContent className="space-y-3">
-            <p className="text-xs text-muted-foreground">Switch the UI to preview a different role's view (does not change server permissions).</p>
-            <Label className="mb-1.5 block">Role</Label>
-            <Select value={user?.role} onValueChange={(v) => setRoleOverride(v as Role)}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {ROLES.map((r) => <SelectItem key={r} value={r}>{ROLE_LABEL[r]}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </CardContent>
-        </Card>
-      </div>
+      
+      <RoleGate 
+        allowedRoles="admin" 
+        fallback={
+          <Card>
+            <CardContent className="py-12">
+              <EmptyState 
+                icon={ShieldAlert} 
+                title="Admin access required" 
+                description="The settings workspace is restricted to administrators. Please contact your manager for role changes." 
+              />
+            </CardContent>
+          </Card>
+        }
+      >
+        <div className="grid gap-4 lg:grid-cols-2">
+          <Card>
+            <CardHeader><CardTitle>Account</CardTitle></CardHeader>
+            <CardContent className="space-y-3 text-sm">
+              <Row k="Email" v={user?.email} />
+              <Row k="Role" v={user?.role ? ROLE_LABEL[user.role] : "—"} />
+              <Button variant="destructive" onClick={logout}>Sign out</Button>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader><CardTitle>Preview as role</CardTitle></CardHeader>
+            <CardContent className="space-y-3">
+              <p className="text-xs text-muted-foreground">Switch the UI to preview a different role's view (does not change server permissions).</p>
+              <Label className="mb-1.5 block">Role</Label>
+              <Select value={user?.role} onValueChange={(v) => setRoleOverride(v as Role)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {ROLES.map((r) => <SelectItem key={r} value={r}>{ROLE_LABEL[r]}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </CardContent>
+          </Card>
+        </div>
+      </RoleGate>
     </div>
   );
 }
