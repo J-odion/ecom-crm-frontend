@@ -28,6 +28,7 @@ import { Route as AuthenticatedFinanceRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedDeliveriesRouteImport } from './routes/_authenticated/deliveries'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedCommissionRulesRouteImport } from './routes/_authenticated/commission-rules'
+import { Route as AuthenticatedAuditTrailRouteImport } from './routes/_authenticated/audit-trail'
 import { Route as AuthenticatedAccountantRouteImport } from './routes/_authenticated/accountant'
 import { Route as AuthenticatedOrdersIdRouteImport } from './routes/_authenticated/orders.$id'
 import { Route as AuthenticatedLeadsIdRouteImport } from './routes/_authenticated/leads.$id'
@@ -127,6 +128,11 @@ const AuthenticatedCommissionRulesRoute =
     path: '/commission-rules',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const AuthenticatedAuditTrailRoute = AuthenticatedAuditTrailRouteImport.update({
+  id: '/audit-trail',
+  path: '/audit-trail',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedAccountantRoute = AuthenticatedAccountantRouteImport.update({
   id: '/accountant',
   path: '/accountant',
@@ -150,6 +156,7 @@ export interface FileRoutesByFullPath {
   '/signup': typeof SignupRoute
   '/verify': typeof VerifyRoute
   '/accountant': typeof AuthenticatedAccountantRoute
+  '/audit-trail': typeof AuthenticatedAuditTrailRoute
   '/commission-rules': typeof AuthenticatedCommissionRulesRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/deliveries': typeof AuthenticatedDeliveriesRoute
@@ -173,6 +180,7 @@ export interface FileRoutesByTo {
   '/signup': typeof SignupRoute
   '/verify': typeof VerifyRoute
   '/accountant': typeof AuthenticatedAccountantRoute
+  '/audit-trail': typeof AuthenticatedAuditTrailRoute
   '/commission-rules': typeof AuthenticatedCommissionRulesRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/deliveries': typeof AuthenticatedDeliveriesRoute
@@ -198,6 +206,7 @@ export interface FileRoutesById {
   '/signup': typeof SignupRoute
   '/verify': typeof VerifyRoute
   '/_authenticated/accountant': typeof AuthenticatedAccountantRoute
+  '/_authenticated/audit-trail': typeof AuthenticatedAuditTrailRoute
   '/_authenticated/commission-rules': typeof AuthenticatedCommissionRulesRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/deliveries': typeof AuthenticatedDeliveriesRoute
@@ -223,6 +232,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/verify'
     | '/accountant'
+    | '/audit-trail'
     | '/commission-rules'
     | '/dashboard'
     | '/deliveries'
@@ -246,6 +256,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/verify'
     | '/accountant'
+    | '/audit-trail'
     | '/commission-rules'
     | '/dashboard'
     | '/deliveries'
@@ -270,6 +281,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/verify'
     | '/_authenticated/accountant'
+    | '/_authenticated/audit-trail'
     | '/_authenticated/commission-rules'
     | '/_authenticated/dashboard'
     | '/_authenticated/deliveries'
@@ -431,6 +443,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedCommissionRulesRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/audit-trail': {
+      id: '/_authenticated/audit-trail'
+      path: '/audit-trail'
+      fullPath: '/audit-trail'
+      preLoaderRoute: typeof AuthenticatedAuditTrailRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/accountant': {
       id: '/_authenticated/accountant'
       path: '/accountant'
@@ -479,6 +498,7 @@ const AuthenticatedOrdersRouteWithChildren =
 
 interface AuthenticatedRouteChildren {
   AuthenticatedAccountantRoute: typeof AuthenticatedAccountantRoute
+  AuthenticatedAuditTrailRoute: typeof AuthenticatedAuditTrailRoute
   AuthenticatedCommissionRulesRoute: typeof AuthenticatedCommissionRulesRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedDeliveriesRoute: typeof AuthenticatedDeliveriesRoute
@@ -496,6 +516,7 @@ interface AuthenticatedRouteChildren {
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedAccountantRoute: AuthenticatedAccountantRoute,
+  AuthenticatedAuditTrailRoute: AuthenticatedAuditTrailRoute,
   AuthenticatedCommissionRulesRoute: AuthenticatedCommissionRulesRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedDeliveriesRoute: AuthenticatedDeliveriesRoute,

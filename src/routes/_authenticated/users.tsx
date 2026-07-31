@@ -80,6 +80,9 @@ function UsersPage() {
                     <th className="px-4 py-3 text-left">Staff Member</th>
                     <th className="px-4 py-3 text-left">Role</th>
                     <th className="px-4 py-3 text-left">Location</th>
+                    <th className="px-4 py-3 text-left">Team</th>
+                    <th className="px-4 py-3 text-left">Commission Rate</th>
+                    <th className="px-4 py-3 text-left">Status</th>
                     <th className="px-4 py-3 text-right">Actions</th>
                   </tr>
                 </thead>
@@ -103,19 +106,35 @@ function UsersPage() {
 }
 
 function UserRow({ user, locations, onUpdate }: { user: any; locations: any[]; onUpdate: () => void }) {
-  const qc = useQueryClient();
   const [isEditing, setIsEditing] = useState(false);
   const [role, setRole] = useState<Role>(user.role);
   const [locationId, setLocationId] = useState<string>(user.locationId || "none");
+  const [team, setTeam] = useState<string>(user.team || "");
+  const [commissionRate, setCommissionRate] = useState<string>(user.commissionRate?.toString() || "");
 
   const update = useMutation({
-    mutationFn: () => apiActions.users.update(user.id || user._id, { role, locationId: locationId === "none" ? null : locationId }),
+    mutationFn: () =>
+      apiActions.users.update(user.id || user._id, {
+        role,
+        locationId: locationId === "none" ? null : locationId,
+        team: team || null,
+        commissionRate: commissionRate ? Number(commissionRate) : null,
+      }),
     onSuccess: () => {
       toast.success("User updated");
       setIsEditing(false);
       onUpdate();
     },
     onError: (e: any) => toast.error(e.friendlyMessage || "Failed to update"),
+  });
+
+  const toggleActive = useMutation({
+    mutationFn: () => apiActions.users.toggleStatus(user.id || user._id),
+    onSuccess: () => {
+      toast.success("User status toggled");
+      onUpdate();
+    },
+    onError: (e: any) => toast.error(e.friendlyMessage || "Failed to toggle status"),
   });
 
   const remove = useMutation({
@@ -131,11 +150,18 @@ function UserRow({ user, locations, onUpdate }: { user: any; locations: any[]; o
     <tr className="border-b border-border/60 hover:bg-muted/30">
       <td className="px-4 py-4">
         <div className="flex items-center gap-3">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary text-xs font-bold uppercase">
-            {user.email.slice(0, 2)}
+          <div className="relative">
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary text-xs font-bold uppercase">
+              {user.email.slice(0, 2)}
+            </div>
+            <span
+              className={`absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-background ${
+                user.isOnline ? "bg-emerald-500" : "bg-slate-400"
+              }`}
+            />
           </div>
           <div className="flex flex-col">
-            <span className="font-medium">{user.name || "Unnamed User"}</span>
+            <span className="font-medium">{user.fullName || user.name || "Unnamed User"}</span>
             <span className="text-[11px] text-muted-foreground">{user.email}</span>
           </div>
         </div>
@@ -175,9 +201,61 @@ function UserRow({ user, locations, onUpdate }: { user: any; locations: any[]; o
         ) : (
           <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
             <MapPin className="h-3 w-3" />
-            {locations.find(l => (l.id || l._id) === user.locationId)?.name || "Remote / Unassigned"}
+            {locations.find((l) => (l.id || l._id) === user.locationId)?.name || "Remote / Unassigned"}
           </div>
         )}
+      </td>
+      <td className="px-4 py-4">
+        {isEditing ? (
+          <Input
+            size="sm"
+            className="h-8 w-[120px] text-xs"
+            value={team}
+            onChange={(e) => setTeam(e.target.value)}
+            placeholder="e.g. Team Alpha"
+          />
+        ) : (
+          <span className="text-xs text-muted-foreground">{user.team || "—"}</span>
+        )}
+      </td>
+      <td className="px-4 py-4">
+        {isEditing ? (
+          <Input
+            size="sm"
+            type="number"
+            className="h-8 w-[80px] text-xs"
+            value={commissionRate}
+            onChange={(e) => setCommissionRate(e.target.value)}
+            placeholder="0"
+          />
+        ) : (
+          <span className="text-xs text-muted-foreground">
+            {user.commissionRate !== undefined && user.commissionRate !== null
+              ? `${user.commissionRate}%`
+              : "—"}
+          </span>
+        )}
+      </td>
+      <td className="px-4 py-4">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => toggleActive.mutate()}
+          disabled={toggleActive.isPending}
+          className={`h-7 px-2.5 text-[11px] font-semibold rounded-full ${
+            user.isActive
+              ? "bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20"
+              : "bg-slate-500/10 text-slate-600 hover:bg-slate-500/20"
+          }`}
+        >
+          {toggleActive.isPending ? (
+            <Loader2 className="h-3 w-3 animate-spin" />
+          ) : user.isActive ? (
+            "Active"
+          ) : (
+            "Inactive"
+          )}
+        </Button>
       </td>
       <td className="px-4 py-4 text-right">
         {isEditing ? (
@@ -208,14 +286,39 @@ function UserRow({ user, locations, onUpdate }: { user: any; locations: any[]; o
 
 function CreateUserDialog({ locations, onDone }: { locations: any[]; onDone: () => void }) {
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({ name: "", email: "", password: "", role: "sales_agent" as Role, locationId: "none" });
+  const [form, setForm] = useState({
+    fullName: "",
+    email: "",
+    password: "",
+    role: "sales_agent" as Role,
+    locationId: "none",
+    team: "",
+    commissionRate: "",
+  });
 
   const create = useMutation({
-    mutationFn: () => apiActions.users.update("new", { ...form, locationId: form.locationId === "none" ? null : form.locationId }),
+    mutationFn: () =>
+      apiActions.users.create({
+        fullName: form.fullName,
+        email: form.email,
+        password: form.password,
+        role: form.role,
+        team: form.team || null,
+        locationId: form.locationId === "none" ? null : form.locationId,
+        commissionRate: form.commissionRate ? Number(form.commissionRate) : null,
+      }),
     onSuccess: () => {
       toast.success("User created");
       setOpen(false);
-      setForm({ name: "", email: "", password: "", role: "sales_agent", locationId: "none" });
+      setForm({
+        fullName: "",
+        email: "",
+        password: "",
+        role: "sales_agent",
+        locationId: "none",
+        team: "",
+        commissionRate: "",
+      });
       onDone();
     },
     onError: (e: any) => toast.error(e.friendlyMessage || "Failed to create"),
@@ -237,21 +340,48 @@ function CreateUserDialog({ locations, onDone }: { locations: any[]; onDone: () 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label>Full Name</Label>
-              <Input placeholder="John Doe" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+              <Input
+                placeholder="John Doe"
+                value={form.fullName}
+                onChange={(e) => setForm({ ...form, fullName: e.target.value })}
+              />
             </div>
             <div className="space-y-1.5">
               <Label>Work Email</Label>
-              <Input type="email" placeholder="john@company.com" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
+              <Input
+                type="email"
+                placeholder="john@company.com"
+                value={form.email}
+                onChange={(e) => setForm({ ...form, email: e.target.value })}
+              />
             </div>
           </div>
-          <div className="space-y-1.5">
-            <Label>Initial Password</Label>
-            <Input type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} />
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <Label>Initial Password</Label>
+              <Input
+                type="password"
+                value={form.password}
+                onChange={(e) => setForm({ ...form, password: e.target.value })}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Commission Rate (%)</Label>
+              <Input
+                type="number"
+                placeholder="10"
+                value={form.commissionRate}
+                onChange={(e) => setForm({ ...form, commissionRate: e.target.value })}
+              />
+            </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label>Role</Label>
-              <Select value={form.role} onValueChange={(v) => setForm({ ...form, role: v as Role })}>
+              <Select
+                value={form.role}
+                onValueChange={(v) => setForm({ ...form, role: v as Role })}
+              >
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {Object.entries(ROLE_LABEL).map(([k, v]) => (
@@ -262,7 +392,10 @@ function CreateUserDialog({ locations, onDone }: { locations: any[]; onDone: () 
             </div>
             <div className="space-y-1.5">
               <Label>Location</Label>
-              <Select value={form.locationId} onValueChange={(v) => setForm({ ...form, locationId: v })}>
+              <Select
+                value={form.locationId}
+                onValueChange={(v) => setForm({ ...form, locationId: v })}
+              >
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">Remote / Unassigned</SelectItem>
@@ -273,9 +406,21 @@ function CreateUserDialog({ locations, onDone }: { locations: any[]; onDone: () 
               </Select>
             </div>
           </div>
+          <div className="space-y-1.5">
+            <Label>Assign Team</Label>
+            <Input
+              placeholder="e.g. Team Alpha"
+              value={form.team}
+              onChange={(e) => setForm({ ...form, team: e.target.value })}
+            />
+          </div>
         </div>
         <DialogFooter>
-          <Button onClick={() => create.mutate()} disabled={!form.email || !form.password || create.isPending} className="w-full">
+          <Button
+            onClick={() => create.mutate()}
+            disabled={!form.email || !form.password || create.isPending}
+            className="w-full"
+          >
             {create.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
             Create User Account
           </Button>

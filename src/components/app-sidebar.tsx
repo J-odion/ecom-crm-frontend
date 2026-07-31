@@ -15,6 +15,7 @@ import {
   Package,
   MapPin,
   Code2,
+  History,
 } from "lucide-react";
 import {
   Sidebar,
@@ -47,33 +48,54 @@ const NAV: { group: string; items: NavItem[] }[] = [
   {
     group: "Sales",
     items: [
-      { to: "/leads", label: "Leads", icon: ClipboardList, roles: ["customer_service", "admin", "sales_agent"] },
-      { to: "/lead-forms", label: "Lead Forms", icon: Code2, roles: ["admin"] },
-      { to: "/orders", label: "Orders", icon: ShoppingCart, roles: "all" },
-      { to: "/media-buyer", label: "Media Buyer", icon: Megaphone, roles: ["sales_agent", "admin"] },
+      {
+        to: "/leads",
+        label: "Leads",
+        icon: ClipboardList,
+        roles: ["customer_service", "admin", "dev", "customer_service_manager", "logistics_manager", "marketing_manager"],
+      },
+      { to: "/lead-forms", label: "Lead Forms", icon: Code2, roles: "all" },
+      {
+        to: "/orders",
+        label: "Orders",
+        icon: ShoppingCart,
+        roles: ["customer_service", "admin", "dev", "customer_service_manager", "logistics", "logistics_manager", "accountant", "delivery_agent"],
+      },
+      {
+        to: "/media-buyer",
+        label: "Media Buyer",
+        icon: Megaphone,
+        roles: ["sales_agent", "media_buyer", "admin", "dev", "marketing_manager"],
+      },
     ],
   },
   {
     group: "Operations",
     items: [
-      { to: "/deliveries", label: "Deliveries", icon: Truck, roles: ["logistics", "delivery_agent", "admin"] },
-      { to: "/inventory", label: "Inventory", icon: Boxes, roles: ["admin", "logistics"] },
-      { to: "/products", label: "Products", icon: Package, roles: ["admin", "logistics", "customer_service", "sales_agent"] },
-      { to: "/locations", label: "Locations", icon: MapPin, roles: ["admin", "logistics"] },
+      {
+        to: "/deliveries",
+        label: "Deliveries",
+        icon: Truck,
+        roles: ["logistics", "logistics_manager", "delivery_agent", "admin", "dev"],
+      },
+      { to: "/inventory", label: "Inventory", icon: Boxes, roles: ["admin", "dev", "logistics", "logistics_manager"] },
+      { to: "/products", label: "Products", icon: Package, roles: "all" },
+      { to: "/locations", label: "Locations", icon: MapPin, roles: ["admin", "dev", "logistics", "logistics_manager"] },
     ],
   },
   {
     group: "Finance",
     items: [
-      { to: "/accountant", label: "Remittance", icon: ReceiptText, roles: ["accountant", "admin"] },
-      { to: "/finance", label: "Finance", icon: Wallet, roles: ["admin", "accountant"] },
-      { to: "/commission-rules", label: "Commission Rules", icon: Percent, roles: ["admin"] },
+      { to: "/accountant", label: "Remittance", icon: ReceiptText, roles: ["accountant", "admin", "dev"] },
+      { to: "/finance", label: "Finance", icon: Wallet, roles: ["admin", "dev", "accountant"] },
+      { to: "/commission-rules", label: "Commission Rules", icon: Percent, roles: ["admin", "dev"] },
     ],
   },
   {
     group: "Admin",
     items: [
-      { to: "/users", label: "Users", icon: UserCog, roles: ["admin"] },
+      { to: "/users", label: "Users", icon: UserCog, roles: ["admin", "dev"] },
+      { to: "/audit-trail", label: "Audit Trail", icon: History, roles: ["admin", "dev"] },
       { to: "/settings", label: "Settings", icon: Settings, roles: "all" },
     ],
   },

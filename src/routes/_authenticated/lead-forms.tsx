@@ -149,11 +149,21 @@ function FormCard({ form }: { form: any }) {
             </RoleGate>
           </div>
         </div>
-        <div className="mt-3">
-          <CardTitle className="text-base">{form.name}</CardTitle>
-          <p className="text-xs text-muted-foreground mt-1">
-            Product: <span className="text-foreground font-medium">{form.productName}</span>
+        <div className="mt-3 space-y-1">
+          <CardTitle className="text-base">{form.title || form.name || "Untitled Form"}</CardTitle>
+          <p className="text-xs text-muted-foreground">
+            Product: <span className="text-foreground font-medium">{form.productId?.name || form.productName || "—"}</span>
           </p>
+          <p className="text-xs text-muted-foreground">
+            Attributed Buyer: <span className="text-foreground font-medium">{form.sourceMediaBuyerId?.fullName || form.sourceMediaBuyerId?.name || form.mediaBuyerName || "System"}</span>
+          </p>
+          <p className="text-xs text-muted-foreground">
+            Default Source: <span className="text-foreground font-semibold text-indigo-600">{form.defaultSource || "FACEBOOK"}</span>
+          </p>
+          <div className="flex justify-between items-center text-xs font-semibold pt-2 border-t mt-2">
+            <span className="text-muted-foreground">Form Earnings:</span>
+            <span className="text-emerald-600">₦{Number(form.earnings || 0).toLocaleString()}</span>
+          </div>
         </div>
       </CardHeader>
       <CardContent className="mt-auto flex flex-col gap-3 pt-0">
@@ -248,17 +258,18 @@ function CreateFormDialog({ onDone }: { onDone: () => void }) {
 
   const products: any[] = Array.isArray(productsData) ? productsData : productsData?.data || [];
   const mediaBuyers = (Array.isArray(usersData) ? usersData : usersData?.data || []).filter(
-    (u: any) => u.role === "sales_agent" || u.role === "admin"
+    (u: any) => u.role === "sales_agent" || u.role === "media_buyer" || u.role === "admin" || u.role === "marketing_manager"
   );
 
   const create = useMutation({
     mutationFn: () =>
       apiActions.leadForms.create({
-        name,
+        title: name,
         productId,
-        mediaBuyerId,
-        buttonText,
-        buttonColor,
+        sourceMediaBuyerId: mediaBuyerId,
+        primaryColor: buttonColor,
+        submitButtonText: buttonText,
+        defaultSource: "FACEBOOK",
       }),
     onSuccess: () => {
       toast.success("Lead form created");

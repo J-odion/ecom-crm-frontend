@@ -27,13 +27,21 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 
+import { useAuth } from "@/lib/auth";
+import { UnauthorizedView } from "@/components/unauthorized-view";
+
 export const Route = createFileRoute("/_authenticated/leads")({
   head: () => ({ meta: [{ title: "Leads — Ecom CRM" }] }),
   component: LeadsPage,
 });
 
 function LeadsPage() {
+  const { user } = useAuth();
   const [search, setSearch] = useState("");
+
+  if (user?.role === "sales_agent" || user?.role === "media_buyer") {
+    return <UnauthorizedView />;
+  }
   const [filter, setFilter] = useState({
     isDuplicate: false,
     isReturning: false,

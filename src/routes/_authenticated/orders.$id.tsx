@@ -1,12 +1,13 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { api } from "@/lib/api";
+import { api, apiActions } from "@/lib/api";
 import { PageHeader } from "@/components/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/status-badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/lib/auth";
 import { CallButton, WhatsAppButton, CopyOrderButton } from "@/components/contact-buttons";
 import { toast } from "sonner";
@@ -14,6 +15,8 @@ import { useState } from "react";
 import { Loader2, ArrowLeft, Wallet } from "lucide-react";
 import { OrderStatusTimeline } from "@/components/order-status-timeline";
 import { RoleGate } from "@/components/role-gate";
+
+import { UnauthorizedView } from "@/components/unauthorized-view";
 
 export const Route = createFileRoute("/_authenticated/orders/$id")({
   head: () => ({ meta: [{ title: "Order details — Ecom CRM" }] }),
@@ -25,7 +28,13 @@ function OrderDetail() {
   const { user } = useAuth();
   const qc = useQueryClient();
   const navigate = useNavigate();
+
+  if (user?.role === "sales_agent" || user?.role === "media_buyer") {
+    return <UnauthorizedView />;
+  }
   const [fee, setFee] = useState("");
+  const [followUpDate, setFollowUpDate] = useState("");
+  const [followUpNotes, setFollowUpNotes] = useState("");
 
   const { data, isLoading } = useQuery({
     queryKey: ["order", id],
@@ -38,6 +47,21 @@ function OrderDetail() {
     qc.invalidateQueries({ queryKey: ["orders"] });
     qc.invalidateQueries({ queryKey: ["deliveries"] });
   };
+
+  const scheduleFollowUp = useMutation({
+    mutationFn: async () =>
+      (await apiActions.orders.followUp(id, {
+        followUpDate: new Date(followUpDate).toISOString(),
+        notes: followUpNotes,
+      })).data,
+    onSuccess: () => {
+      toast.success("CS Follow-up scheduled successfully");
+      setFollowUpDate("");
+      setFollowUpNotes("");
+      invalidate();
+    },
+    onError: (e: any) => toast.error(e.friendlyMessage || "Failed to schedule follow-up"),
+  });
 
   const setDelivery = useMutation({
     mutationFn: async (status: "delivered" | "failed") =>
@@ -175,6 +199,40 @@ function OrderDetail() {
               <CardContent>
                 <Button variant="destructive" className="w-full" onClick={() => cancel.mutate()} disabled={cancel.isPending}>
                   Cancel order (RTS)
+                </Button>
+              </CardContent>
+            </Card>
+          </RoleGate>
+
+          <RoleGate allowedRoles={["customer_service", "admin", "customer_service_manager", "logistics", "logistics_manager", "accountant", "dev"]}>
+            <Card>
+              <CardHeader><CardTitle>Schedule Follow-Up</CardTitle></CardHeader>
+              <CardContent className="space-y-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="followUpDate">Follow-Up Date</Label>
+                  <Input
+                    id="followUpDate"
+                    type="datetime-local"
+                    value={followUpDate}
+                    onChange={(e) => setFollowUpDate(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="followUpNotes">Notes</Label>
+                  <Textarea
+                    id="followUpNotes"
+                    placeholder="Describe follow-up details..."
+                    value={followUpNotes}
+                    onChange={(e) => setFollowUpNotes(e.target.value)}
+                    className="min-h-[70px] resize-none"
+                  />
+                </div>
+                <Button
+                  onClick={() => scheduleFollowUp.mutate()}
+                  disabled={scheduleFollowUp.isPending || !followUpDate}
+                  className="w-full text-xs font-semibold"
+                >
+                  {scheduleFollowUp.isPending ? <Loader2 className="h-3 w-3 animate-spin mr-2" /> : "Schedule Follow-up"}
                 </Button>
               </CardContent>
             </Card>

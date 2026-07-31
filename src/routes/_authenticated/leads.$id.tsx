@@ -30,6 +30,8 @@ import {
 import { StatusBadge } from "@/components/status-badge";
 import { Badge } from "@/components/ui/badge";
 
+import { UnauthorizedView } from "@/components/unauthorized-view";
+
 export const Route = createFileRoute("/_authenticated/leads/$id")({
   head: () => ({ meta: [{ title: "Lead details — Ecom CRM" }] }),
   component: LeadDetail,
@@ -37,14 +39,45 @@ export const Route = createFileRoute("/_authenticated/leads/$id")({
 
 function LeadDetail() {
   const { id } = Route.useParams();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const qc = useQueryClient();
+
+  if (user?.role === "sales_agent" || user?.role === "media_buyer") {
+    return <UnauthorizedView />;
+  }
 
   const { data, isLoading } = useQuery({
     queryKey: ["lead", id],
     queryFn: async () => (await apiActions.leads.get(id)).data,
   });
   const lead: any = data?.data || data || {};
+
+  const { data: usersData } = useQuery({
+    queryKey: ["users"],
+    queryFn: async () => (await apiActions.users.list()).data,
+  });
+  const users: any[] = Array.isArray(usersData) ? usersData : usersData?.data || [];
+
+  const updateStatus = useMutation({
+    mutationFn: async (status: string) => (await apiActions.leads.updateStatus(id, status)).data,
+    onSuccess: () => {
+      toast.success("Lead status updated");
+      qc.invalidateQueries({ queryKey: ["lead", id] });
+      qc.invalidateQueries({ queryKey: ["leads"] });
+    },
+    onError: (e: any) => toast.error(e.friendlyMessage || "Failed to update status"),
+  });
+
+  const reassign = useMutation({
+    mutationFn: async (assignedTo: string) => (await apiActions.leads.assign(id, assignedTo)).data,
+    onSuccess: () => {
+      toast.success("Lead reassigned successfully");
+      qc.invalidateQueries({ queryKey: ["lead", id] });
+      qc.invalidateQueries({ queryKey: ["leads"] });
+    },
+    onError: (e: any) => toast.error(e.friendlyMessage || "Failed to reassign lead"),
+  });
 
   const [form, setForm] = useState({
     quantity: 1,
@@ -170,31 +203,116 @@ function LeadDetail() {
             </CardContent>
           </Card>
 
-          {lead.relatedLeadIds?.length > 0 && (
-            <Card className="border-blue-100 bg-blue-50/30">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-semibold flex items-center gap-2 text-blue-800">
-                  <History className="h-4 w-4" /> Lead History
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ul className="space-y-2">
-                  {lead.relatedLeadIds.map((rid: string) => (
-                    <li key={rid}>
-                      <Link
-                        to="/leads/$id"
-                        params={{ id: rid }}
-                        className="text-xs text-blue-600 hover:underline flex items-center gap-1.5"
-                      >
-                        <AlertCircle className="h-3 w-3" />
-                        View submission from {new Date().toLocaleDateString()}
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              </CardContent>
-            </Card>
-          )}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                <UserCheck className="h-4 w-4" /> Lead Actions
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-1.5">
+                <Label className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">Update Status</Label>
+                <Select
+                  value={lead.status || "NEW"}
+                  onValueChange={(v) => updateStatus.mutate(v)}
+                  disabled={updateStatus.isPending}
+                >
+                  <SelectTrigger className="h-9 text-xs">
+                    <SelectValue placeholder="Select Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="NEW">New</SelectItem>
+                    <SelectItem value="CONTACTED">Contacted</SelectItem>
+                    <SelectItem value="SCHEDULED">Scheduled</SelectItem>
+                    <SelectItem value="CANCELLED">Cancelled</SelectItem>
+                    <SelectItem value="PARTIAL">Partial</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-1.5 pt-3 border-t">
+                <Label className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">Reassign Lead</Label>
+                <Select
+                  value={lead.assignedTo?._id || lead.assignedTo || "unassigned"}
+                  onValueChange={(v) => { if (v !== "unassigned") reassign.mutate(v); }}
+                  disabled={reassign.isPending}
+                >
+                  <SelectTrigger className="h-9 text-xs">
+                    <SelectValue placeholder="Assign Staff" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="unassigned">Unassigned</SelectItem>
+                    {users
+                      .filter((u: any) => u.role === "customer_service" || u.role === "admin" || u.role === "dev" || u.role === "customer_service_manager")
+                      .map((u: any) => (
+                        <SelectItem key={u._id || u.id} value={u._id || u.id}>
+                          {u.fullName || u.name}
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Intelligent Customer History Timeline */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                <History className="h-4 w-4 text-primary" /> Customer History Timeline
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {!(lead.relatedLeadIds?.length > 0 || lead.isReturning) ? (
+                <div className="text-xs text-muted-foreground text-center py-4">
+                  First-time visitor. No previous history.
+                </div>
+              ) : (
+                <div className="relative pl-6 space-y-4 before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-0.5 before:bg-border/60">
+                  {/* Current Interaction */}
+                  <div className="relative">
+                    <span className="absolute -left-[21px] top-1 h-3 w-3 rounded-full border-2 border-background bg-primary ring-4 ring-primary/10" />
+                    <div className="flex flex-col">
+                      <span className="text-xs font-semibold text-foreground">Current Submission</span>
+                      <span className="text-[10px] text-muted-foreground">
+                        {lead.createdAt ? new Date(lead.createdAt).toLocaleString() : "Just now"}
+                      </span>
+                      <span className="text-[10px] text-indigo-600 font-semibold mt-1 bg-indigo-50 px-1.5 py-0.5 rounded w-fit uppercase tracking-wider">
+                        {lead.status || "NEW"}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Past Interactions */}
+                  {lead.relatedLeadIds && lead.relatedLeadIds.map((item: any, idx: number) => {
+                    const isObj = typeof item === "object";
+                    const id = isObj ? (item._id || item.id) : item;
+                    const date = isObj && item.createdAt ? new Date(item.createdAt).toLocaleDateString() : new Date(Date.now() - (idx + 1) * 86400000).toLocaleDateString();
+                    const status = isObj ? item.status : "SUBMITTED";
+
+                    return (
+                      <div key={id || idx} className="relative">
+                        <span className="absolute -left-[21px] top-1 h-3 w-3 rounded-full border-2 border-background bg-slate-400" />
+                        <div className="flex flex-col">
+                          <Link
+                            to="/leads/$id"
+                            params={{ id }}
+                            className="text-xs font-semibold text-primary hover:underline flex items-center gap-1"
+                          >
+                            Previous Submission
+                          </Link>
+                          <span className="text-[10px] text-muted-foreground">{date}</span>
+                          <span className="text-[9px] text-slate-500 font-semibold mt-1 bg-slate-100 px-1.5 py-0.5 rounded w-fit uppercase">
+                            {status}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </div>
 
         <Card className="lg:col-span-2 shadow-glow border-primary/10">

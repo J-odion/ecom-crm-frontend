@@ -114,11 +114,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await api.post("/auth/reset-password", d);
   }, []);
 
-  const logout = useCallback(() => {
-    setToken(null);
-    setStoredUser(null);
-    setTokenState(null);
-    setUser(null);
+  const logout = useCallback(async () => {
+    try {
+      await api.post("/auth/logout");
+    } catch (err) {
+      console.warn("Backend logout failed, logging out locally:", err);
+    } finally {
+      setToken(null);
+      setStoredUser(null);
+      setTokenState(null);
+      setUser(null);
+    }
   }, []);
 
   const setRoleOverride = useCallback((role: Role) => {

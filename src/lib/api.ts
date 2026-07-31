@@ -74,16 +74,26 @@ export type Role =
   | "accountant"
   | "sales_agent"
   | "delivery_agent"
-  | "management";
+  | "management"
+  | "media_buyer"
+  | "customer_service_manager"
+  | "logistics_manager"
+  | "marketing_manager"
+  | "dev";
 
 export const ROLE_LABEL: Record<Role, string> = {
   admin: "Admin",
   customer_service: "Customer Service (CS)",
-  logistics: "Logistics",
+  logistics: "Logistics Manager/Agent",
   accountant: "Accountant",
-  sales_agent: "Media Buyer",
+  sales_agent: "Media Buyer (Legacy)",
   delivery_agent: "Delivery Agent",
   management: "Management",
+  media_buyer: "Media Buyer",
+  customer_service_manager: "CS Manager",
+  logistics_manager: "Logistics Manager",
+  marketing_manager: "Marketing Manager",
+  dev: "Developer",
 };
 
 export const apiActions = {
@@ -94,11 +104,14 @@ export const apiActions = {
     resendOtp: (email: string) => api.post("/auth/resend-otp", { email }),
     forgotPassword: (email: string) => api.post("/auth/forgot-password", { email }),
     resetPassword: (d: any) => api.post("/auth/reset-password", d),
+    logout: () => api.post("/auth/logout"),
   },
   users: {
     list: () => api.get("/users"),
+    create: (d: any) => api.post("/users", d),
     update: (id: string, d: any) => api.patch(`/users/${id}`, d),
     delete: (id: string) => api.delete(`/users/${id}`),
+    toggleStatus: (id: string) => api.patch(`/users/${id}/toggle-status`, {}),
   },
   locations: {
     list: () => api.get("/locations"),
@@ -109,7 +122,8 @@ export const apiActions = {
   leads: {
     list: (params?: any) => api.get("/leads", { params }),
     get: (id: string) => api.get(`/leads/${id}`),
-    assign: (id: string, agentId: string) => api.patch(`/leads/${id}/assign`, { agentId }),
+    assign: (id: string, assignedTo: string) => api.patch(`/leads/${id}/assign`, { assignedTo }),
+    updateStatus: (id: string, status: string) => api.patch(`/leads/${id}/status`, { status }),
     create: (d: any) => api.post("/leads", d),
     partial: (d: any) => api.post("/leads/partial", d),
     webhook: (d: any) => api.post("/leads/webhook", d),
@@ -121,20 +135,26 @@ export const apiActions = {
     update: (id: string, d: any) => api.patch(`/lead-forms/${id}`, d),
     delete: (id: string) => api.delete(`/lead-forms/${id}`),
     getIframe: (id: string) => `${API_BASE}/lead-forms/${id}/embed`,
+    getIframeCode: (id: string) => api.get(`/lead-forms/${id}/iframe-code`),
   },
   orders: {
-    list: () => api.get("/orders"),
+    list: (params?: any) => api.get("/orders", { params }),
     get: (id: string) => api.get(`/orders/${id}`),
     create: (d: any) => api.post("/orders", d),
     updateDelivery: (id: string, d: any) => api.patch(`/orders/${id}/delivery-status`, d),
     updatePayment: (id: string, d: any) => api.patch(`/orders/${id}/payment-status`, d),
     cancel: (id: string) => api.patch(`/orders/${id}/cancel`, {}),
+    followUp: (id: string, d: any) => api.patch(`/orders/${id}/follow-up`, d),
   },
   inventory: {
     products: () => api.get("/inventory/products"),
     createProduct: (d: any) => api.post("/inventory/products", d),
     stockIn: (d: any) => api.post("/inventory/in", d),
     transfer: (d: any) => api.post("/inventory/transfer", d),
+  },
+  products: {
+    list: () => api.get("/products"),
+    create: (d: any) => api.post("/products", d),
   },
   logistics: {
     deliveries: () => api.get("/logistics/deliveries"),
@@ -143,9 +163,24 @@ export const apiActions = {
   },
   analytics: {
     dashboard: () => api.get("/analytics/dashboard"),
-    performance: () => api.get("/media-buyers/performance"),
+    csDashboard: (params?: any) => api.get("/analytics/cs-dashboard", { params }),
+    me: () => api.get("/analytics/me"),
+    performance: (params?: any) => api.get("/media-buyers/performance", { params }),
+  },
+  mediaBuyers: {
+    logSpend: (d: any) => api.post("/media-buyers/spend-log", d),
+    dashboard: () => api.get("/media-buyers/dashboard"),
   },
   commissions: {
     rules: () => api.get("/commission-rules"),
+    createRule: (d: any) => api.post("/commission-rules", d),
+  },
+  finance: {
+    getWalletBalance: (userId: string) => api.get(`/finance/wallet/${userId}`),
+    getProfit: () => api.get("/finance/profit"),
+  },
+  auditTrail: {
+    list: () => api.get("/audit-trail"),
   }
 };
+

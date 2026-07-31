@@ -9,13 +9,21 @@ import { ShoppingCart, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
 
+import { useAuth } from "@/lib/auth";
+import { UnauthorizedView } from "@/components/unauthorized-view";
+
 export const Route = createFileRoute("/_authenticated/orders")({
   head: () => ({ meta: [{ title: "Orders — Ecom CRM" }] }),
   component: OrdersPage,
 });
 
 function OrdersPage() {
+  const { user } = useAuth();
   const [q, setQ] = useState("");
+
+  if (user?.role === "sales_agent" || user?.role === "media_buyer") {
+    return <UnauthorizedView />;
+  }
   const { data, isLoading } = useQuery({
     queryKey: ["orders"],
     queryFn: async () => (await api.get("/orders")).data,
