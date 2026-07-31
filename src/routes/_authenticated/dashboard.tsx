@@ -3,7 +3,7 @@ import { useAuth } from "@/lib/auth";
 import { PageHeader } from "@/components/page-header";
 import { StatCard } from "@/components/stat-card";
 import { useQuery } from "@tanstack/react-query";
-import { apiActions, ROLE_LABEL } from "@/lib/api";
+import { apiActions, ROLE_LABEL, type Role } from "@/lib/api";
 import {
   ShoppingCart,
   Truck,
@@ -91,7 +91,7 @@ function Dashboard() {
             label="Delivery Cost"
             value={`₦${Number(data.deliveryCost || 0).toLocaleString()}`}
             icon={Truck}
-            accent="secondary"
+            accent="primary"
           />
           <StatCard
             label="Net Profit"
