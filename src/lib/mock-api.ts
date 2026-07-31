@@ -401,6 +401,24 @@ export function setupMockInterceptors(api: AxiosInstance) {
               weeklyCompleted: 18,
               weeklyFailed: 2
             },
+            onlineUsers: [
+              {
+                userId: "60c72b2f9b1d8a2c2c8b4567",
+                fullName: "Jane Doe",
+                email: "jane@example.com",
+                role: "customer_service",
+                locationName: "Lagos Distribution Hub",
+                team: "Team Alpha"
+              },
+              {
+                userId: "U4",
+                fullName: "Logistics Specialist",
+                email: "logistics@example.com",
+                role: "logistics",
+                locationName: "Abuja Dispatch Station",
+                team: "Team Logistics-A"
+              }
+            ],
             team: [
               {
                 userId: "U1",

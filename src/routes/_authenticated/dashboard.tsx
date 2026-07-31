@@ -74,54 +74,115 @@ function Dashboard() {
 
       {/* RENDER ADMIN / GENERAL MANAGER DASHBOARD */}
       {(currentRole === "admin" || currentRole === "manager") && (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <StatCard
-            label="Revenue"
-            value={`₦${Number(data.revenue || 0).toLocaleString()}`}
-            icon={Wallet}
-            accent="primary"
-          />
-          <StatCard
-            label="Ad Spend"
-            value={`₦${Number(data.adSpend || 0).toLocaleString()}`}
-            icon={Megaphone}
-            accent="warning"
-          />
-          <StatCard
-            label="Delivery Cost"
-            value={`₦${Number(data.deliveryCost || 0).toLocaleString()}`}
-            icon={Truck}
-            accent="primary"
-          />
-          <StatCard
-            label="Net Profit"
-            value={`₦${Number(data.profit || 0).toLocaleString()}`}
-            icon={TrendingUp}
-            accent="success"
-          />
-          <StatCard
-            label="Product Cost (COGS)"
-            value={`₦${Number(data.productCost || 0).toLocaleString()}`}
-            icon={Package}
-          />
-          <StatCard
-            label="Total Paid Commissions"
-            value={`₦${Number(data.commission || 0).toLocaleString()}`}
-            icon={DollarSign}
-            accent="success"
-          />
-          <StatCard
-            label="Total Orders Count"
-            value={metrics.totalOrders ?? 0}
-            icon={ShoppingCart}
-          />
-          <StatCard
-            label="System Delivery Rate"
-            value={`${Number(metrics.deliveryRate || 0).toFixed(1)}%`}
-            icon={Target}
-            accent="success"
-          />
-        </div>
+        <>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <StatCard
+              label="Revenue"
+              value={`₦${Number(data.revenue || 0).toLocaleString()}`}
+              icon={Wallet}
+              accent="primary"
+            />
+            <StatCard
+              label="Ad Spend"
+              value={`₦${Number(data.adSpend || 0).toLocaleString()}`}
+              icon={Megaphone}
+              accent="warning"
+            />
+            <StatCard
+              label="Delivery Cost"
+              value={`₦${Number(data.deliveryCost || 0).toLocaleString()}`}
+              icon={Truck}
+              accent="primary"
+            />
+            <StatCard
+              label="Net Profit"
+              value={`₦${Number(data.profit || 0).toLocaleString()}`}
+              icon={TrendingUp}
+              accent="success"
+            />
+            <StatCard
+              label="Product Cost (COGS)"
+              value={`₦${Number(data.productCost || 0).toLocaleString()}`}
+              icon={Package}
+            />
+            <StatCard
+              label="Total Paid Commissions"
+              value={`₦${Number(data.commission || 0).toLocaleString()}`}
+              icon={DollarSign}
+              accent="success"
+            />
+            <StatCard
+              label="Total Orders Count"
+              value={metrics.totalOrders ?? 0}
+              icon={ShoppingCart}
+            />
+            <StatCard
+              label="System Delivery Rate"
+              value={`${Number(metrics.deliveryRate || 0).toFixed(1)}%`}
+              icon={Target}
+              accent="success"
+            />
+          </div>
+
+          {/* ACTIVE STAFF ONLINE SECTION */}
+          <Card className="mt-6">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-sm font-semibold">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                </span>
+                Active Staff Online
+              </CardTitle>
+              <CardDescription className="text-xs">
+                Real-time list of all staff members currently online.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="p-0">
+              {(!data.onlineUsers || data.onlineUsers.length === 0) ? (
+                <div className="p-6 text-center text-xs text-muted-foreground">
+                  No staff members are currently online.
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs">
+                    <thead className="border-b border-border bg-muted/40 font-semibold text-muted-foreground text-[10px] uppercase">
+                      <tr>
+                        <th className="px-6 py-2.5 text-left">Name</th>
+                        <th className="px-6 py-2.5 text-left">Email</th>
+                        <th className="px-6 py-2.5 text-left">Role</th>
+                        <th className="px-6 py-2.5 text-left">Office / Location</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {data.onlineUsers.map((onlineUser: any) => (
+                        <tr
+                          key={onlineUser.userId || onlineUser._id}
+                          className="border-b border-border/50 hover:bg-muted/20"
+                        >
+                          <td className="px-6 py-3 font-medium text-foreground">
+                            {onlineUser.fullName}
+                          </td>
+                          <td className="px-6 py-3 text-muted-foreground">
+                            {onlineUser.email}
+                          </td>
+                          <td className="px-6 py-3">
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-semibold bg-primary/10 text-primary uppercase">
+                              {ROLE_LABEL[onlineUser.role as Role] || onlineUser.role}
+                            </span>
+                          </td>
+                          <td className="px-6 py-3 text-muted-foreground">
+                            {onlineUser.locationName || "Remote / Unassigned"}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </>
       )}
 
       {/* RENDER CUSTOMER SERVICE AGENT DASHBOARD */}

@@ -26,13 +26,18 @@ import {
 } from "@/components/ui/dialog";
 import { EmptyState } from "@/components/empty-state";
 
+import { useAuth } from "@/lib/auth";
+import { UnauthorizedView } from "@/components/unauthorized-view";
+
 export const Route = createFileRoute("/_authenticated/users")({
   head: () => ({ meta: [{ title: "Team Management — Ecom CRM" }] }),
   component: UsersPage,
 });
 
 function UsersPage() {
+  const { user } = useAuth();
   const qc = useQueryClient();
+
   const { data: userData, isLoading: usersLoading } = useQuery({
     queryKey: ["users"],
     queryFn: async () => (await apiActions.users.list()).data,
@@ -43,8 +48,19 @@ function UsersPage() {
     queryFn: async () => (await apiActions.locations.list()).data,
   });
 
+  if (
+    user?.role !== "admin" &&
+    user?.role !== "dev" &&
+    user?.role !== "manager" &&
+    user?.role !== "accountant"
+  ) {
+    return <UnauthorizedView />;
+  }
+
   const users: any[] = Array.isArray(userData) ? userData : userData?.data || [];
   const locations: any[] = Array.isArray(locationData) ? locationData : locationData?.data || [];
+
+  const canCreate = user?.role === "admin" || user?.role === "dev";
 
   return (
     <div className="space-y-6">
@@ -52,10 +68,12 @@ function UsersPage() {
         title="Team Management"
         description="Provision accounts, assign roles, and set office locations for your staff."
         actions={
-          <CreateUserDialog
-            locations={locations}
-            onDone={() => qc.invalidateQueries({ queryKey: ["users"] })}
-          />
+          canCreate ? (
+            <CreateUserDialog
+              locations={locations}
+              onDone={() => qc.invalidateQueries({ queryKey: ["users"] })}
+            />
+          ) : null
         }
       />
 
@@ -82,6 +100,7 @@ function UsersPage() {
                     <th className="px-4 py-3 text-left">Location</th>
                     <th className="px-4 py-3 text-left">Team</th>
                     <th className="px-4 py-3 text-left">Commission Rate</th>
+                    <th className="px-4 py-3 text-left">Base Salary</th>
                     <th className="px-4 py-3 text-left">Status</th>
                     <th className="px-4 py-3 text-right">Actions</th>
                   </tr>
@@ -111,6 +130,7 @@ function UserRow({ user, locations, onUpdate }: { user: any; locations: any[]; o
   const [locationId, setLocationId] = useState<string>(user.locationId || "none");
   const [team, setTeam] = useState<string>(user.team || "");
   const [commissionRate, setCommissionRate] = useState<string>(user.commissionRate?.toString() || "");
+  const [salary, setSalary] = useState<string>(user.salary?.toString() || "");
 
   const update = useMutation({
     mutationFn: () =>
@@ -119,6 +139,7 @@ function UserRow({ user, locations, onUpdate }: { user: any; locations: any[]; o
         locationId: locationId === "none" ? null : locationId,
         team: team || null,
         commissionRate: commissionRate ? Number(commissionRate) : null,
+        salary: salary ? Number(salary) : null,
       }),
     onSuccess: () => {
       toast.success("User updated");
@@ -237,6 +258,24 @@ function UserRow({ user, locations, onUpdate }: { user: any; locations: any[]; o
         )}
       </td>
       <td className="px-4 py-4">
+        {isEditing ? (
+          <Input
+            size="sm"
+            type="number"
+            className="h-8 w-[100px] text-xs"
+            value={salary}
+            onChange={(e) => setSalary(e.target.value)}
+            placeholder="150000"
+          />
+        ) : (
+          <span className="text-xs text-muted-foreground">
+            {user.salary !== undefined && user.salary !== null
+              ? `₦${Number(user.salary).toLocaleString()}`
+              : "—"}
+          </span>
+        )}
+      </td>
+      <td className="px-4 py-4">
         <Button
           variant="ghost"
           size="sm"
@@ -294,6 +333,7 @@ function CreateUserDialog({ locations, onDone }: { locations: any[]; onDone: () 
     locationId: "none",
     team: "",
     commissionRate: "",
+    salary: "",
   });
 
   const create = useMutation({
@@ -301,11 +341,12 @@ function CreateUserDialog({ locations, onDone }: { locations: any[]; onDone: () 
       apiActions.users.create({
         fullName: form.fullName,
         email: form.email,
-        password: form.password,
+        password: form.password || undefined,
         role: form.role,
         team: form.team || null,
         locationId: form.locationId === "none" ? null : form.locationId,
         commissionRate: form.commissionRate ? Number(form.commissionRate) : null,
+        salary: form.salary ? Number(form.salary) : null,
       }),
     onSuccess: () => {
       toast.success("User created");
@@ -318,6 +359,7 @@ function CreateUserDialog({ locations, onDone }: { locations: any[]; onDone: () 
         locationId: "none",
         team: "",
         commissionRate: "",
+        salary: "",
       });
       onDone();
     },
@@ -358,13 +400,24 @@ function CreateUserDialog({ locations, onDone }: { locations: any[]; onDone: () 
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <Label>Initial Password</Label>
+              <Label>Initial Password (Optional)</Label>
               <Input
                 type="password"
+                placeholder="Auto-generated if empty"
                 value={form.password}
                 onChange={(e) => setForm({ ...form, password: e.target.value })}
               />
             </div>
+            <div className="space-y-1.5">
+              <Label>Assign Team</Label>
+              <Input
+                placeholder="e.g. Team Alpha"
+                value={form.team}
+                onChange={(e) => setForm({ ...form, team: e.target.value })}
+              />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label>Commission Rate (%)</Label>
               <Input
@@ -372,6 +425,15 @@ function CreateUserDialog({ locations, onDone }: { locations: any[]; onDone: () 
                 placeholder="10"
                 value={form.commissionRate}
                 onChange={(e) => setForm({ ...form, commissionRate: e.target.value })}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Base Salary (₦)</Label>
+              <Input
+                type="number"
+                placeholder="150000"
+                value={form.salary}
+                onChange={(e) => setForm({ ...form, salary: e.target.value })}
               />
             </div>
           </div>
@@ -406,19 +468,11 @@ function CreateUserDialog({ locations, onDone }: { locations: any[]; onDone: () 
               </Select>
             </div>
           </div>
-          <div className="space-y-1.5">
-            <Label>Assign Team</Label>
-            <Input
-              placeholder="e.g. Team Alpha"
-              value={form.team}
-              onChange={(e) => setForm({ ...form, team: e.target.value })}
-            />
-          </div>
         </div>
         <DialogFooter>
           <Button
             onClick={() => create.mutate()}
-            disabled={!form.email || !form.password || create.isPending}
+            disabled={!form.email || !form.fullName || create.isPending}
             className="w-full"
           >
             {create.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}

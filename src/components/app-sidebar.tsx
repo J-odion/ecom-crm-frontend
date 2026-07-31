@@ -94,7 +94,7 @@ const NAV: { group: string; items: NavItem[] }[] = [
   {
     group: "Admin",
     items: [
-      { to: "/users", label: "Users", icon: UserCog, roles: ["admin", "dev"] },
+      { to: "/users", label: "Users", icon: Users, roles: ["admin", "dev", "manager", "accountant"] },
       { to: "/audit-trail", label: "Audit Trail", icon: History, roles: ["admin", "dev"] },
       { to: "/settings", label: "Settings", icon: Settings, roles: "all" },
     ],
