@@ -229,7 +229,6 @@ function UserRow({ user, locations, onUpdate }: { user: any; locations: any[]; o
       <td className="px-4 py-4">
         {isEditing ? (
           <Input
-            size="sm"
             className="h-8 w-[120px] text-xs"
             value={team}
             onChange={(e) => setTeam(e.target.value)}
@@ -242,7 +241,6 @@ function UserRow({ user, locations, onUpdate }: { user: any; locations: any[]; o
       <td className="px-4 py-4">
         {isEditing ? (
           <Input
-            size="sm"
             type="number"
             className="h-8 w-[80px] text-xs"
             value={commissionRate}
@@ -260,7 +258,6 @@ function UserRow({ user, locations, onUpdate }: { user: any; locations: any[]; o
       <td className="px-4 py-4">
         {isEditing ? (
           <Input
-            size="sm"
             type="number"
             className="h-8 w-[100px] text-xs"
             value={salary}
