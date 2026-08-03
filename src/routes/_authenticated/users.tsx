@@ -101,6 +101,9 @@ function UsersPage() {
                     <th className="px-4 py-3 text-left">Team</th>
                     <th className="px-4 py-3 text-left">Commission Rate</th>
                     <th className="px-4 py-3 text-left">Base Salary</th>
+                    <th className="px-4 py-3 text-left">Current Commission</th>
+                    <th className="px-4 py-3 text-left">All-Time Commission</th>
+                    <th className="px-4 py-3 text-left">Total Salary Earned</th>
                     <th className="px-4 py-3 text-left">Status</th>
                     <th className="px-4 py-3 text-right">Actions</th>
                   </tr>
@@ -271,6 +274,35 @@ function UserRow({ user, locations, onUpdate }: { user: any; locations: any[]; o
               : "—"}
           </span>
         )}
+      </td>
+      <td className="px-4 py-4">
+        <span className="text-xs text-muted-foreground font-semibold">
+          {user.currentCommission !== undefined && user.currentCommission !== null
+            ? `₦${Number(user.currentCommission).toLocaleString()}`
+            : user.currentCommissionEarned !== undefined && user.currentCommissionEarned !== null
+            ? `₦${Number(user.currentCommissionEarned).toLocaleString()}`
+            : "₦0"}
+        </span>
+      </td>
+      <td className="px-4 py-4">
+        <span className="text-xs text-muted-foreground font-semibold">
+          {user.allTimeCommission !== undefined && user.allTimeCommission !== null
+            ? `₦${Number(user.allTimeCommission).toLocaleString()}`
+            : user.allTimeCommissions !== undefined && user.allTimeCommissions !== null
+            ? `₦${Number(user.allTimeCommissions).toLocaleString()}`
+            : "₦0"}
+        </span>
+      </td>
+      <td className="px-4 py-4">
+        <span className="text-xs text-muted-foreground font-semibold">
+          {user.totalSalaryEarned !== undefined && user.totalSalaryEarned !== null
+            ? `₦${Number(user.totalSalaryEarned).toLocaleString()}`
+            : user.totalAllTimeSalaryEarned !== undefined && user.totalAllTimeSalaryEarned !== null
+            ? `₦${Number(user.totalAllTimeSalaryEarned).toLocaleString()}`
+            : user.allTimeSalaryEarned !== undefined && user.allTimeSalaryEarned !== null
+            ? `₦${Number(user.allTimeSalaryEarned).toLocaleString()}`
+            : "₦0"}
+        </span>
       </td>
       <td className="px-4 py-4">
         <Button

@@ -195,10 +195,10 @@ export function setupMockInterceptors(api: AxiosInstance) {
         ...config,
         adapter: async () => ({
           data: [
-            { _id: "U1", fullName: "Jane Doe", email: "jane@example.com", role: "customer_service", team: "Team Alpha", isActive: true, isOnline: true, commissionRate: 5 },
-            { _id: "U2", fullName: "Mike Smith", email: "mike@example.com", role: "media_buyer", team: "Team Alpha", isActive: true, isOnline: false, commissionRate: 10 },
-            { _id: "U3", fullName: "Alice Accountant", email: "alice@example.com", role: "accountant", team: "Team Beta", isActive: true, isOnline: true, commissionRate: 0 },
-            { _id: "U4", fullName: "Logistics Specialist", email: "logistics@example.com", role: "logistics", team: "Team Gamma", isActive: false, isOnline: false, commissionRate: 2 },
+            { _id: "U1", fullName: "Jane Doe", email: "jane@example.com", role: "customer_service", team: "Team Alpha", isActive: true, isOnline: true, commissionRate: 5, salary: 150000, currentCommission: 12500, allTimeCommission: 85000, totalSalaryEarned: 450000 },
+            { _id: "U2", fullName: "Mike Smith", email: "mike@example.com", role: "media_buyer", team: "Team Alpha", isActive: true, isOnline: false, commissionRate: 10, salary: 200000, currentCommission: 45000, allTimeCommission: 320000, totalSalaryEarned: 980000 },
+            { _id: "U3", fullName: "Alice Accountant", email: "alice@example.com", role: "accountant", team: "Team Beta", isActive: true, isOnline: true, commissionRate: 0, salary: 250000, currentCommission: 0, allTimeCommission: 0, totalSalaryEarned: 600000 },
+            { _id: "U4", fullName: "Logistics Specialist", email: "logistics@example.com", role: "logistics", team: "Team Gamma", isActive: false, isOnline: false, commissionRate: 2, salary: 120000, currentCommission: 3000, allTimeCommission: 12000, totalSalaryEarned: 180000 },
           ],
           status: 200,
           statusText: "OK",

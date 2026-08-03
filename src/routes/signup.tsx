@@ -14,6 +14,14 @@ import {
   ClipboardList,
 } from "lucide-react";
 import { AuthHero } from "@/components/auth-hero";
+import { ROLE_LABEL, type Role } from "@/lib/api";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export const Route = createFileRoute("/signup")({
   head: () => ({ meta: [{ title: "Create account — Ecom CRM" }] }),
@@ -55,6 +63,7 @@ function SignupPage() {
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [role, setRole] = useState<Role>("sales_agent");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [showPw, setShowPw] = useState(false);
@@ -92,7 +101,7 @@ function SignupPage() {
     }
     setLoading(true);
     try {
-      await signup(email, password, name);
+      await signup(email, password, name, role);
       toast.success("Account created! Please verify your email.");
       navigate({ to: "/verify", search: { email } });
     } catch (err: any) {
@@ -158,6 +167,22 @@ function SignupPage() {
               {showErr("email") && (
                 <p className="text-[12px] text-destructive">{errors.email}</p>
               )}
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="role">Role</Label>
+              <Select value={role} onValueChange={(v) => setRole(v as Role)}>
+                <SelectTrigger id="role" className="w-full">
+                  <SelectValue placeholder="Select your role" />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.entries(ROLE_LABEL).map(([k, v]) => (
+                    <SelectItem key={k} value={k}>
+                      {v}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-1.5">
