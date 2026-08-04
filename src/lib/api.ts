@@ -112,6 +112,7 @@ export const apiActions = {
     list: () => api.get("/users"),
     create: (d: any) => api.post("/users", d),
     update: (id: string, d: any) => api.patch(`/users/${id}`, d),
+    updateRole: (id: string, role: string) => api.patch(`/users/${id}/role`, { role }),
     delete: (id: string) => api.delete(`/users/${id}`),
     toggleStatus: (id: string) => api.patch(`/users/${id}/toggle-status`, {}),
   },
