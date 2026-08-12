@@ -184,6 +184,16 @@ export const apiActions = {
   },
   auditTrail: {
     list: () => api.get("/audit-trail"),
+  },
+  devices: {
+    list: () => api.get("/devices"),
+    get: (id: string) => api.get(`/devices/${id}`),
+    assign: (id: string, d: any) => api.post(`/devices/${id}/assign`, d),
+    unassign: (id: string) => api.post(`/devices/${id}/unassign`),
+    lock: (id: string, d: any) => api.post(`/devices/${id}/lock`, d),
+    unlock: (id: string, d: any) => api.post(`/devices/${id}/unlock`, d),
+    wipe: (id: string, d: any) => api.post(`/devices/${id}/wipe`, d),
+    sync: () => api.post("/devices/sync"),
   }
 };
 

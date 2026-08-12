@@ -40,6 +40,7 @@ function LoginPage() {
     } catch (err: any) {
       if (err?.response?.status === 401 && err.friendlyMessage?.toLowerCase().includes("verify")) {
         toast.info("Please verify your email to continue");
+        localStorage.setItem("verify_email", email);
         navigate({ to: "/verify", search: { email } });
         return;
       }

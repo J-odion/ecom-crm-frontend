@@ -25,6 +25,7 @@ import { Route as AuthenticatedLeadsRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedLeadFormsRouteImport } from './routes/_authenticated/lead-forms'
 import { Route as AuthenticatedInventoryRouteImport } from './routes/_authenticated/inventory'
 import { Route as AuthenticatedFinanceRouteImport } from './routes/_authenticated/finance'
+import { Route as AuthenticatedDevicesRouteImport } from './routes/_authenticated/devices'
 import { Route as AuthenticatedDeliveriesRouteImport } from './routes/_authenticated/deliveries'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedCommissionRulesRouteImport } from './routes/_authenticated/commission-rules'
@@ -32,6 +33,7 @@ import { Route as AuthenticatedAuditTrailRouteImport } from './routes/_authentic
 import { Route as AuthenticatedAccountantRouteImport } from './routes/_authenticated/accountant'
 import { Route as AuthenticatedOrdersIdRouteImport } from './routes/_authenticated/orders.$id'
 import { Route as AuthenticatedLeadsIdRouteImport } from './routes/_authenticated/leads.$id'
+import { Route as AuthenticatedDevicesIdRouteImport } from './routes/_authenticated/devices.$id'
 
 const VerifyRoute = VerifyRouteImport.update({
   id: '/verify',
@@ -112,6 +114,11 @@ const AuthenticatedFinanceRoute = AuthenticatedFinanceRouteImport.update({
   path: '/finance',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedDevicesRoute = AuthenticatedDevicesRouteImport.update({
+  id: '/devices',
+  path: '/devices',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedDeliveriesRoute = AuthenticatedDeliveriesRouteImport.update({
   id: '/deliveries',
   path: '/deliveries',
@@ -148,6 +155,11 @@ const AuthenticatedLeadsIdRoute = AuthenticatedLeadsIdRouteImport.update({
   path: '/$id',
   getParentRoute: () => AuthenticatedLeadsRoute,
 } as any)
+const AuthenticatedDevicesIdRoute = AuthenticatedDevicesIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => AuthenticatedDevicesRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -160,6 +172,7 @@ export interface FileRoutesByFullPath {
   '/commission-rules': typeof AuthenticatedCommissionRulesRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/deliveries': typeof AuthenticatedDeliveriesRoute
+  '/devices': typeof AuthenticatedDevicesRouteWithChildren
   '/finance': typeof AuthenticatedFinanceRoute
   '/inventory': typeof AuthenticatedInventoryRoute
   '/lead-forms': typeof AuthenticatedLeadFormsRoute
@@ -170,6 +183,7 @@ export interface FileRoutesByFullPath {
   '/products': typeof AuthenticatedProductsRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/users': typeof AuthenticatedUsersRoute
+  '/devices/$id': typeof AuthenticatedDevicesIdRoute
   '/leads/$id': typeof AuthenticatedLeadsIdRoute
   '/orders/$id': typeof AuthenticatedOrdersIdRoute
 }
@@ -184,6 +198,7 @@ export interface FileRoutesByTo {
   '/commission-rules': typeof AuthenticatedCommissionRulesRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/deliveries': typeof AuthenticatedDeliveriesRoute
+  '/devices': typeof AuthenticatedDevicesRouteWithChildren
   '/finance': typeof AuthenticatedFinanceRoute
   '/inventory': typeof AuthenticatedInventoryRoute
   '/lead-forms': typeof AuthenticatedLeadFormsRoute
@@ -194,6 +209,7 @@ export interface FileRoutesByTo {
   '/products': typeof AuthenticatedProductsRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/users': typeof AuthenticatedUsersRoute
+  '/devices/$id': typeof AuthenticatedDevicesIdRoute
   '/leads/$id': typeof AuthenticatedLeadsIdRoute
   '/orders/$id': typeof AuthenticatedOrdersIdRoute
 }
@@ -210,6 +226,7 @@ export interface FileRoutesById {
   '/_authenticated/commission-rules': typeof AuthenticatedCommissionRulesRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/deliveries': typeof AuthenticatedDeliveriesRoute
+  '/_authenticated/devices': typeof AuthenticatedDevicesRouteWithChildren
   '/_authenticated/finance': typeof AuthenticatedFinanceRoute
   '/_authenticated/inventory': typeof AuthenticatedInventoryRoute
   '/_authenticated/lead-forms': typeof AuthenticatedLeadFormsRoute
@@ -220,6 +237,7 @@ export interface FileRoutesById {
   '/_authenticated/products': typeof AuthenticatedProductsRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/users': typeof AuthenticatedUsersRoute
+  '/_authenticated/devices/$id': typeof AuthenticatedDevicesIdRoute
   '/_authenticated/leads/$id': typeof AuthenticatedLeadsIdRoute
   '/_authenticated/orders/$id': typeof AuthenticatedOrdersIdRoute
 }
@@ -236,6 +254,7 @@ export interface FileRouteTypes {
     | '/commission-rules'
     | '/dashboard'
     | '/deliveries'
+    | '/devices'
     | '/finance'
     | '/inventory'
     | '/lead-forms'
@@ -246,6 +265,7 @@ export interface FileRouteTypes {
     | '/products'
     | '/settings'
     | '/users'
+    | '/devices/$id'
     | '/leads/$id'
     | '/orders/$id'
   fileRoutesByTo: FileRoutesByTo
@@ -260,6 +280,7 @@ export interface FileRouteTypes {
     | '/commission-rules'
     | '/dashboard'
     | '/deliveries'
+    | '/devices'
     | '/finance'
     | '/inventory'
     | '/lead-forms'
@@ -270,6 +291,7 @@ export interface FileRouteTypes {
     | '/products'
     | '/settings'
     | '/users'
+    | '/devices/$id'
     | '/leads/$id'
     | '/orders/$id'
   id:
@@ -285,6 +307,7 @@ export interface FileRouteTypes {
     | '/_authenticated/commission-rules'
     | '/_authenticated/dashboard'
     | '/_authenticated/deliveries'
+    | '/_authenticated/devices'
     | '/_authenticated/finance'
     | '/_authenticated/inventory'
     | '/_authenticated/lead-forms'
@@ -295,6 +318,7 @@ export interface FileRouteTypes {
     | '/_authenticated/products'
     | '/_authenticated/settings'
     | '/_authenticated/users'
+    | '/_authenticated/devices/$id'
     | '/_authenticated/leads/$id'
     | '/_authenticated/orders/$id'
   fileRoutesById: FileRoutesById
@@ -422,6 +446,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedFinanceRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/devices': {
+      id: '/_authenticated/devices'
+      path: '/devices'
+      fullPath: '/devices'
+      preLoaderRoute: typeof AuthenticatedDevicesRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/deliveries': {
       id: '/_authenticated/deliveries'
       path: '/deliveries'
@@ -471,8 +502,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedLeadsIdRouteImport
       parentRoute: typeof AuthenticatedLeadsRoute
     }
+    '/_authenticated/devices/$id': {
+      id: '/_authenticated/devices/$id'
+      path: '/$id'
+      fullPath: '/devices/$id'
+      preLoaderRoute: typeof AuthenticatedDevicesIdRouteImport
+      parentRoute: typeof AuthenticatedDevicesRoute
+    }
   }
 }
+
+interface AuthenticatedDevicesRouteChildren {
+  AuthenticatedDevicesIdRoute: typeof AuthenticatedDevicesIdRoute
+}
+
+const AuthenticatedDevicesRouteChildren: AuthenticatedDevicesRouteChildren = {
+  AuthenticatedDevicesIdRoute: AuthenticatedDevicesIdRoute,
+}
+
+const AuthenticatedDevicesRouteWithChildren =
+  AuthenticatedDevicesRoute._addFileChildren(AuthenticatedDevicesRouteChildren)
 
 interface AuthenticatedLeadsRouteChildren {
   AuthenticatedLeadsIdRoute: typeof AuthenticatedLeadsIdRoute
@@ -502,6 +551,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedCommissionRulesRoute: typeof AuthenticatedCommissionRulesRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedDeliveriesRoute: typeof AuthenticatedDeliveriesRoute
+  AuthenticatedDevicesRoute: typeof AuthenticatedDevicesRouteWithChildren
   AuthenticatedFinanceRoute: typeof AuthenticatedFinanceRoute
   AuthenticatedInventoryRoute: typeof AuthenticatedInventoryRoute
   AuthenticatedLeadFormsRoute: typeof AuthenticatedLeadFormsRoute
@@ -520,6 +570,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedCommissionRulesRoute: AuthenticatedCommissionRulesRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedDeliveriesRoute: AuthenticatedDeliveriesRoute,
+  AuthenticatedDevicesRoute: AuthenticatedDevicesRouteWithChildren,
   AuthenticatedFinanceRoute: AuthenticatedFinanceRoute,
   AuthenticatedInventoryRoute: AuthenticatedInventoryRoute,
   AuthenticatedLeadFormsRoute: AuthenticatedLeadFormsRoute,

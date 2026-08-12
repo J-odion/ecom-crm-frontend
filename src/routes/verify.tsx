@@ -25,16 +25,21 @@ function VerifyPage() {
   const [resending, setResending] = useState(false);
   const [countdown, setCountdown] = useState(0);
 
-  // Get email from URL params or session storage (fallback)
+  // Get email from URL params or local storage (fallback)
   const searchParams = new URLSearchParams(window.location.search);
-  const email = searchParams.get("email") || "";
+  const urlEmail = searchParams.get("email");
+  const storedEmail = typeof window !== "undefined" ? localStorage.getItem("verify_email") : null;
+  const email = urlEmail || storedEmail || "";
 
   useEffect(() => {
+    if (urlEmail && urlEmail !== storedEmail) {
+      localStorage.setItem("verify_email", urlEmail);
+    }
     if (!email) {
       toast.error("No email found for verification");
       navigate({ to: "/login" });
     }
-  }, [email, navigate]);
+  }, [email, urlEmail, storedEmail, navigate]);
 
   useEffect(() => {
     if (countdown > 0) {

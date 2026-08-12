@@ -16,6 +16,7 @@ import {
   MapPin,
   Code2,
   History,
+  Laptop,
 } from "lucide-react";
 import {
   Sidebar,
@@ -96,6 +97,7 @@ const NAV: { group: string; items: NavItem[] }[] = [
     items: [
       { to: "/users", label: "Users", icon: Users, roles: ["admin", "dev", "manager", "accountant"] },
       { to: "/audit-trail", label: "Audit Trail", icon: History, roles: ["admin", "dev"] },
+      { to: "/devices", label: "Devices", icon: Laptop, roles: ["admin", "dev", "management"] },
       { to: "/settings", label: "Settings", icon: Settings, roles: "all" },
     ],
   },

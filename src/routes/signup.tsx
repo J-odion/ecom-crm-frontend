@@ -103,6 +103,7 @@ function SignupPage() {
     try {
       await signup(email, password, name, role);
       toast.success("Account created! Please verify your email.");
+      localStorage.setItem("verify_email", email);
       navigate({ to: "/verify", search: { email } });
     } catch (err: any) {
       toast.error(err.friendlyMessage || "Signup failed");
