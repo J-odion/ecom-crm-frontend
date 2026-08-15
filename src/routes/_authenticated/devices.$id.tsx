@@ -1,10 +1,11 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiActions } from "@/lib/api";
 import { PageHeader } from "@/components/page-header";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { StatusBadge } from "@/components/status-badge";
-import { Loader2, Laptop, Lock, Unlock, Eraser, UserPlus, UserMinus, ShieldAlert } from "lucide-react";
+import { Loader2, Laptop, Lock, Unlock, Eraser, UserPlus, UserMinus, ShieldAlert, ArrowLeft } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -19,6 +20,7 @@ function DeviceDetailsPage() {
   const { id } = Route.useParams();
   const [actionType, setActionType] = useState<"LOCK" | "UNLOCK" | "WIPE" | null>(null);
   const [assignModalOpen, setAssignModalOpen] = useState(false);
+  const queryClient = useQueryClient();
 
   const { data, isLoading, refetch } = useQuery({
     queryKey: ["device", id],
@@ -27,8 +29,18 @@ function DeviceDetailsPage() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center p-24">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      <div className="space-y-6">
+        <div className="space-y-2">
+          <Skeleton className="h-4 w-24" />
+          <Skeleton className="h-8 w-64" />
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <Skeleton className="h-[400px] md:col-span-2" />
+          <div className="space-y-6">
+            <Skeleton className="h-48" />
+            <Skeleton className="h-48" />
+          </div>
+        </div>
       </div>
     );
   }
@@ -51,7 +63,8 @@ function DeviceDetailsPage() {
         await apiActions.devices.wipe(id, { reason });
         toast.success("Wipe command sent successfully.");
       }
-      refetch();
+      queryClient.invalidateQueries({ queryKey: ["device", id] });
+      queryClient.invalidateQueries({ queryKey: ["devices"] });
     } catch (e: any) {
       toast.error(e.friendlyMessage || "Action failed");
     } finally {
@@ -64,7 +77,8 @@ function DeviceDetailsPage() {
     try {
       await apiActions.devices.unassign(id);
       toast.success("Device unassigned.");
-      refetch();
+      queryClient.invalidateQueries({ queryKey: ["device", id] });
+      queryClient.invalidateQueries({ queryKey: ["devices"] });
     } catch (e: any) {
       toast.error(e.friendlyMessage || "Failed to unassign");
     }
@@ -72,10 +86,14 @@ function DeviceDetailsPage() {
 
   return (
     <div className="space-y-6">
+      <div className="mb-2">
+        <Link to="/devices" className="text-sm text-muted-foreground hover:text-foreground inline-flex items-center">
+          <ArrowLeft className="mr-1 h-4 w-4" /> Back to Devices
+        </Link>
+      </div>
       <PageHeader 
         title={device.name || "Unknown Device"} 
         description={`Serial: ${device.serialNumber || 'N/A'}`}
-        backTo="/devices" 
       />
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -94,7 +112,7 @@ function DeviceDetailsPage() {
               </div>
               <div>
                 <p className="text-muted-foreground text-xs uppercase tracking-wider mb-1">Platform</p>
-                <p className="font-medium">{device.type} {device.osVersion && `(${device.osVersion})`}</p>
+                <p className="font-medium">{device.type} {(device.os || device.osVersion) && `(${device.os || device.osVersion})`}</p>
               </div>
               <div>
                 <p className="text-muted-foreground text-xs uppercase tracking-wider mb-1">Manufacturer</p>
@@ -198,7 +216,8 @@ function DeviceDetailsPage() {
         deviceId={id}
         onSuccess={() => {
           setAssignModalOpen(false);
-          refetch();
+          queryClient.invalidateQueries({ queryKey: ["device", id] });
+          queryClient.invalidateQueries({ queryKey: ["devices"] });
         }}
       />
     </div>

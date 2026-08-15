@@ -3,9 +3,11 @@ import { useQuery } from "@tanstack/react-query";
 import { api, apiActions } from "@/lib/api";
 import { PageHeader } from "@/components/page-header";
 import { Card, CardContent } from "@/components/ui/card";
+import { useQueryClient } from "@tanstack/react-query";
 import { StatusBadge } from "@/components/status-badge";
 import { EmptyState } from "@/components/empty-state";
 import { Laptop, Loader2, RefreshCcw } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
 import { useAuth } from "@/lib/auth";
@@ -22,6 +24,7 @@ function DevicesPage() {
   const { user } = useAuth();
   const [q, setQ] = useState("");
   const [syncing, setSyncing] = useState(false);
+  const queryClient = useQueryClient();
 
   // Allow admin and management to see devices
   if (user?.role !== "admin" && user?.role !== "management" && user?.role !== "dev") {
@@ -38,7 +41,7 @@ function DevicesPage() {
       setSyncing(true);
       await apiActions.devices.sync();
       toast.success("Sync triggered successfully. Devices will update shortly.");
-      setTimeout(() => refetch(), 3000);
+      setTimeout(() => queryClient.invalidateQueries({ queryKey: ["devices"] }), 2000);
     } catch (e: any) {
       toast.error(e.friendlyMessage || "Failed to sync devices");
     } finally {
@@ -68,8 +71,10 @@ function DevicesPage() {
       <Card>
         <CardContent className="p-0">
           {isLoading ? (
-            <div className="flex items-center justify-center p-12 text-muted-foreground">
-              <Loader2 className="h-5 w-5 animate-spin mr-2" /> Loading devices…
+            <div className="space-y-3 p-6">
+              {[...Array(5)].map((_, i) => (
+                <Skeleton key={i} className="h-12 w-full" />
+              ))}
             </div>
           ) : filtered.length === 0 ? (
             <EmptyState icon={Laptop} title="No devices found" description="Click Sync with Fleet to import devices from your MDM." />
@@ -97,7 +102,7 @@ function DevicesPage() {
                           </Link>
                         </td>
                         <td className="px-4 py-3">
-                          {d.type} <span className="text-muted-foreground text-xs">({d.osVersion})</span>
+                          {d.type} <span className="text-muted-foreground text-xs">({d.os || d.osVersion})</span>
                         </td>
                         <td className="px-4 py-3 font-mono text-xs">{d.serialNumber || "—"}</td>
                         <td className="px-4 py-3"><StatusBadge status={d.status} /></td>
