@@ -49,8 +49,7 @@ function LeadFormsPage() {
 
   if (
     user?.role === "customer_service" ||
-    user?.role === "sales_agent" ||
-    user?.role === "media_buyer"
+    user?.role === "sales_agent"
   ) {
     return <UnauthorizedView />;
   }

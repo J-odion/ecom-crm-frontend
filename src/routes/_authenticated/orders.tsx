@@ -206,7 +206,7 @@ function OrdersPage() {
     return <UnauthorizedView />;
   }
 
-  const isMediaBuyer = user?.role === "media_buyer";
+  const isMediaBuyer = user?.role === "media_buyer" || user?.role === "marketing_manager";
   const tabsToRender = isMediaBuyer ? MEDIA_BUYER_TABS : STATUS_TABS;
 
   const handleCopy = (text: string, label: string) => {

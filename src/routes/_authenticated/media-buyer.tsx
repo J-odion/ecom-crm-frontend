@@ -99,6 +99,7 @@ function SpendLogCard({ onDone }: { onDone: () => void }) {
     amount_spent: "",
     amount_received: "",
     order_count: "",
+    product_name: "",
     media_buyer_name: user?.fullName || user?.name || user?.email || "",
   });
 
@@ -116,12 +117,13 @@ function SpendLogCard({ onDone }: { onDone: () => void }) {
         amount_spent: spent,
         amount_received: received,
         order_count: orderCount,
+        product_name: form.product_name,
         cpa: cpa,
         balance: balance,
       })).data,
     onSuccess: () => {
       toast.success("Spend log saved");
-      setForm({ ...form, amount_spent: "", amount_received: "", order_count: "" });
+      setForm({ ...form, amount_spent: "", amount_received: "", order_count: "", product_name: "" });
       onDone();
     },
     onError: (e: any) => toast.error(e.friendlyMessage || "Failed"),
@@ -135,9 +137,15 @@ function SpendLogCard({ onDone }: { onDone: () => void }) {
           <Label className="mb-1.5 block">Date</Label>
           <Input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} />
         </div>
-        <div>
-          <Label className="mb-1.5 block">Media Buyer Name</Label>
-          <Input value={form.media_buyer_name} onChange={(e) => setForm({ ...form, media_buyer_name: e.target.value })} />
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <Label className="mb-1.5 block">Media Buyer Name</Label>
+            <Input value={form.media_buyer_name} onChange={(e) => setForm({ ...form, media_buyer_name: e.target.value })} />
+          </div>
+          <div>
+            <Label className="mb-1.5 block">Product Name</Label>
+            <Input value={form.product_name} onChange={(e) => setForm({ ...form, product_name: e.target.value })} placeholder="e.g. Smart Watch" />
+          </div>
         </div>
         <div className="grid grid-cols-2 gap-2">
           <div>
