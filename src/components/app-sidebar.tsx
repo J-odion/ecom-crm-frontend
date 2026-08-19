@@ -53,13 +53,13 @@ const NAV: { group: string; items: NavItem[] }[] = [
         to: "/lead-forms",
         label: "Lead Forms",
         icon: Code2,
-        roles: ["admin", "dev", "customer_service_manager", "marketing_manager"],
+        roles: ["admin", "dev", "customer_service_manager", "marketing_manager", "media_buyer", "sales_agent"],
       },
       {
         to: "/orders",
         label: "Orders",
         icon: ShoppingCart,
-        roles: ["customer_service", "admin", "dev", "customer_service_manager", "logistics", "logistics_manager", "accountant", "delivery_agent"],
+        roles: ["customer_service", "admin", "dev", "customer_service_manager", "logistics", "logistics_manager", "accountant", "delivery_agent", "marketing_manager", "media_buyer", "sales_agent"],
       },
       {
         to: "/media-buyer",

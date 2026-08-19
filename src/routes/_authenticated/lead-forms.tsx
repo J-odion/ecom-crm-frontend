@@ -47,10 +47,7 @@ function LeadFormsPage() {
   const { user } = useAuth();
   const qc = useQueryClient();
 
-  if (
-    user?.role === "customer_service" ||
-    user?.role === "sales_agent"
-  ) {
+  if (user?.role === "customer_service") {
     return <UnauthorizedView />;
   }
 
@@ -177,6 +174,10 @@ function FormCard({ form }: { form: any }) {
             Default Source: <span className="text-foreground font-semibold text-indigo-600">{form.defaultSource || "FACEBOOK"}</span>
           </p>
           <div className="flex justify-between items-center text-xs font-semibold pt-2 border-t mt-2">
+            <span className="text-muted-foreground">Order Count:</span>
+            <span>{form.orderCount || form.leadsCount || 0}</span>
+          </div>
+          <div className="flex justify-between items-center text-xs font-semibold pt-1">
             <span className="text-muted-foreground">Form Earnings:</span>
             <span className="text-emerald-600">₦{Number(form.earnings || 0).toLocaleString()}</span>
           </div>
