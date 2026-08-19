@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, Outlet, useMatchRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiActions } from "@/lib/api";
 import { PageHeader } from "@/components/page-header";
@@ -46,6 +46,8 @@ export const Route = createFileRoute("/_authenticated/lead-forms")({
 function LeadFormsPage() {
   const { user } = useAuth();
   const qc = useQueryClient();
+  const matchRoute = useMatchRoute();
+  const isCreateRoute = matchRoute({ to: "/lead-forms/create" });
 
   if (user?.role === "customer_service") {
     return <UnauthorizedView />;
@@ -57,6 +59,10 @@ function LeadFormsPage() {
   });
 
   const forms: any[] = Array.isArray(data) ? data : data?.data || [];
+
+  if (isCreateRoute) {
+    return <Outlet />;
+  }
 
   return (
     <div className="space-y-6">
