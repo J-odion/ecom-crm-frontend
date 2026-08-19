@@ -10,7 +10,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useState } from "react";
 import { toast } from "sonner";
-import { Megaphone, Loader2 } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useAuth } from "@/lib/auth";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
 
@@ -20,11 +26,12 @@ export const Route = createFileRoute("/_authenticated/media-buyer")({
 });
 
 function MediaBuyerPage() {
-  const [range, setRange] = useState<"daily" | "weekly" | "monthly">("daily");
+  const [range, setRange] = useState<string>("today");
+  const [customDate, setCustomDate] = useState("");
   const qc = useQueryClient();
   const { data, isLoading } = useQuery({
-    queryKey: ["mb-performance", range],
-    queryFn: async () => (await api.get("/media-buyers/performance", { params: { range } })).data,
+    queryKey: ["mb-performance", range, customDate],
+    queryFn: async () => (await api.get("/media-buyers/performance", { params: { range, date: customDate } })).data,
   });
   const perf: any = data || {};
 
@@ -43,18 +50,28 @@ function MediaBuyerPage() {
         title="Media Buyer"
         description="Track ad spend, balance and conversion performance."
         actions={
-          <Tabs value={range} onValueChange={(v) => setRange(v as any)}>
-            <TabsList>
-              <TabsTrigger value="daily">Daily</TabsTrigger>
-              <TabsTrigger value="weekly">Weekly</TabsTrigger>
-              <TabsTrigger value="monthly">Monthly</TabsTrigger>
-            </TabsList>
-          </Tabs>
+          <div className="flex gap-2">
+            <Select value={range} onValueChange={(v) => setRange(v)}>
+              <SelectTrigger className="w-[140px] bg-background">
+                <SelectValue placeholder="Range" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="today">Today</SelectItem>
+                <SelectItem value="yesterday">Yesterday</SelectItem>
+                <SelectItem value="last_week">Last Week</SelectItem>
+                <SelectItem value="last_month">Last Month</SelectItem>
+                <SelectItem value="custom">Custom Date</SelectItem>
+              </SelectContent>
+            </Select>
+            {range === "custom" && (
+              <Input type="date" className="w-[140px]" value={customDate} onChange={e => setCustomDate(e.target.value)} />
+            )}
+          </div>
         }
       />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-6">
-        <StatCard label="Leads" value={leads} icon={Megaphone} />
+        <StatCard label="Orders" value={leads} icon={Megaphone} />
         <StatCard label="Scheduled" value={scheduled} accent="warning" />
         <StatCard label="Delivered" value={delivered} accent="success" />
         <StatCard label="Ad Spend" value={`₦${Number(spend).toLocaleString()}`} />

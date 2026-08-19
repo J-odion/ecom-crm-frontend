@@ -59,7 +59,7 @@ const NAV: { group: string; items: NavItem[] }[] = [
         to: "/orders",
         label: "Orders",
         icon: ShoppingCart,
-        roles: ["customer_service", "admin", "dev", "customer_service_manager", "logistics", "logistics_manager", "accountant", "delivery_agent", "marketing_manager", "media_buyer", "sales_agent"],
+        roles: ["customer_service", "admin", "dev", "customer_service_manager", "logistics", "logistics_manager", "accountant", "delivery_agent", "marketing_manager"],
       },
       {
         to: "/media-buyer",

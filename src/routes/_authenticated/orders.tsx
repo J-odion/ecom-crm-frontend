@@ -24,6 +24,13 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useState } from "react";
@@ -61,6 +68,8 @@ function OrdersPage() {
   const [q, setQ] = useState("");
   const [activeTab, setActiveTab] = useState("pending");
   const [scheduleSubTab, setScheduleSubTab] = useState("today");
+  const [dateFilter, setDateFilter] = useState("all");
+  const [customDate, setCustomDate] = useState("");
 
   // View Modal State
   const [viewItem, setViewItem] = useState<any | null>(null);
@@ -135,6 +144,31 @@ function OrdersPage() {
     });
   }
 
+  if (dateFilter !== "all") {
+    currentData = currentData.filter((o: any) => {
+      const dateStr = o.createdAt || o.date || o.scheduleDate;
+      if (!dateStr) return false;
+      const d = new Date(dateStr);
+      const now = new Date();
+      
+      if (dateFilter === "daily") {
+        return d.toDateString() === now.toDateString();
+      }
+      if (dateFilter === "weekly") {
+        const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        return d >= weekAgo;
+      }
+      if (dateFilter === "monthly") {
+        const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+        return d >= monthAgo;
+      }
+      if (dateFilter === "custom" && customDate) {
+        return d.toISOString().startsWith(customDate);
+      }
+      return true;
+    });
+  }
+
   const filtered = currentData.filter((o: any) =>
     JSON.stringify(o).toLowerCase().includes(q.toLowerCase())
   );
@@ -202,7 +236,11 @@ function OrdersPage() {
   });
 
 
-  const isMediaBuyer = user?.role === "media_buyer" || user?.role === "marketing_manager" || user?.role === "sales_agent";
+  if (user?.role === "sales_agent" || user?.role === "media_buyer") {
+    return <UnauthorizedView />;
+  }
+
+  const isMediaBuyer = user?.role === "marketing_manager";
   const tabsToRender = isMediaBuyer ? MEDIA_BUYER_TABS : STATUS_TABS;
 
   const handleCopy = (text: string, label: string) => {
@@ -225,8 +263,23 @@ function OrdersPage() {
           </TabsList>
         </Tabs>
 
-        <div className="w-full sm:max-w-xs shrink-0">
-          <Input placeholder="Search name, phone, product..." value={q} onChange={(e) => setQ(e.target.value)} />
+        <div className="flex w-full sm:max-w-xl shrink-0 gap-2">
+          <Input placeholder="Search name, phone, product..." value={q} onChange={(e) => setQ(e.target.value)} className="flex-1" />
+          <Select value={dateFilter} onValueChange={setDateFilter}>
+            <SelectTrigger className="w-[130px]">
+              <SelectValue placeholder="Date" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Time</SelectItem>
+              <SelectItem value="daily">Daily</SelectItem>
+              <SelectItem value="weekly">Weekly</SelectItem>
+              <SelectItem value="monthly">Monthly</SelectItem>
+              <SelectItem value="custom">Custom</SelectItem>
+            </SelectContent>
+          </Select>
+          {dateFilter === "custom" && (
+            <Input type="date" className="w-[140px]" value={customDate} onChange={e => setCustomDate(e.target.value)} />
+          )}
         </div>
       </div>
 
