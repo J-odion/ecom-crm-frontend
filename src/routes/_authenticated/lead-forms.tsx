@@ -64,7 +64,7 @@ function LeadFormsPage() {
         title="Lead Forms"
         description="Create and manage embeddable forms for your landing pages."
         actions={
-          <RoleGate allowedRoles={["admin"]}>
+          <RoleGate allowedRoles={["admin", "dev", "media_buyer", "marketing_manager", "sales_agent", "customer_service_manager"]}>
             <Button asChild>
               <Link to="/lead-forms/create">
                 <Plus className="h-4 w-4 mr-2" />
