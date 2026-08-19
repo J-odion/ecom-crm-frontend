@@ -83,9 +83,10 @@ export function setupMockInterceptors(api: AxiosInstance) {
         ...config,
         adapter: async () => ({
           data: [
-            { id: "ORD101", customerName: "John Doe", product: "Wireless Earbuds", amount: 25000, status: "scheduled", delivery_type: "in_house", callNumber: "08012345678", whatsappNumber: "08012345678" },
-            { id: "ORD102", customerName: "Alice Wong", product: "Smart Watch", amount: 45000, status: "delivered", delivery_type: "third_party", callNumber: "08122334455", whatsappNumber: "08122334455", delivery_fee: 2500 },
-            { id: "ORD103", customerName: "Buba Gana", product: "Power Bank", amount: 15000, status: "cash_remitted", delivery_type: "in_house", callNumber: "09033445566", whatsappNumber: "09033445566", delivery_fee: 1500 },
+            { id: "ORD101", customerName: "John Doe", product: "Wireless Earbuds", amount: 25000, status: "scheduled", delivery_type: "in_house", callNumber: "08012345678", whatsappNumber: "08012345678", scheduleDate: new Date().toISOString() },
+            { id: "ORD102", customerName: "Alice Wong", product: "Smart Watch", amount: 45000, status: "delivered", delivery_type: "third_party", callNumber: "08122334455", whatsappNumber: "08122334455", delivery_fee: 2500, scheduleDate: new Date(Date.now() - 86400000).toISOString() },
+            { id: "ORD103", customerName: "Buba Gana", product: "Power Bank", amount: 15000, status: "cash_remitted", delivery_type: "in_house", callNumber: "09033445566", whatsappNumber: "09033445566", delivery_fee: 1500, scheduleDate: new Date(Date.now() - 172800000).toISOString() },
+            { id: "ORD104", customerName: "Future Guy", product: "Smart Watch", amount: 45000, status: "scheduled", delivery_type: "in_house", callNumber: "09099999999", whatsappNumber: "09099999999", scheduleDate: new Date(Date.now() + 86400000).toISOString() },
           ],
           status: 200,
           statusText: "OK",
@@ -478,6 +479,35 @@ export function setupMockInterceptors(api: AxiosInstance) {
               commissions: 450
             }
           ],
+          status: 200,
+          statusText: "OK",
+          headers: {},
+          config,
+        }),
+      };
+    }
+
+    if (url?.match(/\/analytics\/users\/[A-Za-z0-9]+/i) && method === "get") {
+      const id = url.split("/").pop();
+      return {
+        ...config,
+        adapter: async () => ({
+          data: {
+            userId: id,
+            rating: 88,
+            metrics: {
+              leadsGenerated: 145,
+              ordersScheduled: 95,
+              deliveredOrders: 70,
+              conversionRate: 73.6,
+              adSpend: 54000,
+              cpa: 771,
+            },
+            financials: {
+              salary: 150000,
+              commission: 35000,
+            }
+          },
           status: 200,
           statusText: "OK",
           headers: {},

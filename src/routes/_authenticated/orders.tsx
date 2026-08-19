@@ -6,7 +6,7 @@ import { PageHeader } from "@/components/page-header";
 import { Card, CardContent } from "@/components/ui/card";
 import { StatusBadge } from "@/components/status-badge";
 import { EmptyState } from "@/components/empty-state";
-import { ShoppingCart, Loader2, MoreHorizontal, Copy, CheckCircle2 } from "lucide-react";
+import { ShoppingCart, Loader2, MoreHorizontal, Copy, CheckCircle2, Calendar as CalendarIcon } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -30,6 +30,7 @@ import { useState } from "react";
 import { useAuth } from "@/lib/auth";
 import { UnauthorizedView } from "@/components/unauthorized-view";
 import { CallButton, WhatsAppButton } from "@/components/contact-buttons";
+import { isToday, isFuture, isPast, parseISO, startOfDay } from "date-fns";
 
 export const Route = createFileRoute("/_authenticated/orders")({
   head: () => ({ meta: [{ title: "Orders Management — Ecom CRM" }] }),
@@ -51,6 +52,7 @@ function OrdersPage() {
   const qc = useQueryClient();
   const [q, setQ] = useState("");
   const [activeTab, setActiveTab] = useState("pending");
+  const [scheduleSubTab, setScheduleSubTab] = useState("today");
 
   // View Modal State
   const [viewItem, setViewItem] = useState<any | null>(null);
@@ -64,7 +66,8 @@ function OrdersPage() {
   const [scheduleData, setScheduleData] = useState({
     address: "",
     quantity: 1,
-    notes: ""
+    notes: "",
+    scheduleDate: new Date().toISOString().split("T")[0]
   });
 
   const isPendingTab = activeTab === "pending";
@@ -87,9 +90,21 @@ function OrdersPage() {
     : (Array.isArray(ordersData) ? ordersData : ordersData?.data || []);
 
   // For pending tab we show leads. For other tabs we filter orders by status
-  const currentData = isPendingTab 
+  let currentData = isPendingTab 
     ? rawData 
     : rawData.filter((o: any) => (o.status || o.deliveryStatus)?.toLowerCase() === activeTab);
+
+  if (activeTab === "scheduled") {
+    currentData = currentData.filter((o: any) => {
+      if (!o.scheduleDate) return false;
+      const d = startOfDay(parseISO(o.scheduleDate));
+      const today = startOfDay(new Date());
+      if (scheduleSubTab === "today") return d.getTime() === today.getTime();
+      if (scheduleSubTab === "future") return d.getTime() > today.getTime();
+      if (scheduleSubTab === "past") return d.getTime() < today.getTime();
+      return true;
+    });
+  }
 
   const filtered = currentData.filter((o: any) =>
     JSON.stringify(o).toLowerCase().includes(q.toLowerCase())
@@ -145,6 +160,7 @@ function OrdersPage() {
         deliveryType: "in_house",
         status: "scheduled",
         notes: scheduleData.notes,
+        scheduleDate: new Date(scheduleData.scheduleDate).toISOString(),
       })).data;
     },
     onSuccess: () => {
@@ -185,6 +201,16 @@ function OrdersPage() {
           <Input placeholder="Search name, phone, product..." value={q} onChange={(e) => setQ(e.target.value)} />
         </div>
       </div>
+
+      {activeTab === "scheduled" && (
+        <Tabs value={scheduleSubTab} onValueChange={setScheduleSubTab} className="w-full">
+          <TabsList className="w-max inline-flex">
+            <TabsTrigger value="today">Today's Delivery</TabsTrigger>
+            <TabsTrigger value="future">Future Schedules</TabsTrigger>
+            <TabsTrigger value="past">Past Schedules</TabsTrigger>
+          </TabsList>
+        </Tabs>
+      )}
 
       <Card>
         <CardContent className="p-0">
@@ -400,6 +426,14 @@ function OrdersPage() {
                 min={1} 
                 value={scheduleData.quantity} 
                 onChange={(e) => setScheduleData({ ...scheduleData, quantity: parseInt(e.target.value) || 1 })}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Schedule Date</Label>
+              <Input 
+                type="date" 
+                value={scheduleData.scheduleDate} 
+                onChange={(e) => setScheduleData({ ...scheduleData, scheduleDate: e.target.value })}
               />
             </div>
             <div className="space-y-1.5">

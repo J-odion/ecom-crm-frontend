@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { apiActions, ROLE_LABEL, type Role } from "@/lib/api";
+import { api, apiActions, ROLE_LABEL, type Role } from "@/lib/api";
 import { PageHeader } from "@/components/page-header";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/select";
 import { useState } from "react";
 import { toast } from "sonner";
-import { Loader2, UserPlus, Shield, MapPin, Trash2, Mail, Laptop } from "lucide-react";
+import { Loader2, UserPlus, Shield, MapPin, Trash2, Mail, Laptop, BarChart2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -335,6 +335,7 @@ function UserRow({ user, locations, onUpdate }: { user: any; locations: any[]; o
           </div>
         ) : (
           <div className="flex items-center justify-end gap-2">
+            <UserDashboardDialog user={user} />
             <AssignDeviceToUserDialog user={user} onDone={onUpdate} />
             <Button size="sm" variant="outline" onClick={() => setIsEditing(true)}>Edit</Button>
             <Button
@@ -572,6 +573,113 @@ function AssignDeviceToUserDialog({ user, onDone }: { user: any; onDone: () => v
             Confirm Assignment
           </Button>
         </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+export function UserDashboardDialog({ user }: { user: any }) {
+  const [open, setOpen] = useState(false);
+
+  const { data: analyticsData, isLoading } = useQuery({
+    queryKey: ["userAnalytics", user.id || user._id],
+    queryFn: async () => (await api.get(`/analytics/users/${user.id || user._id}`)).data,
+    enabled: open,
+  });
+
+  const analytics = analyticsData?.data || analyticsData;
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button size="sm" variant="outline" className="text-xs px-2" title="Performance Dashboard">
+          <BarChart2 className="h-4 w-4 text-primary" />
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="max-w-3xl">
+        <DialogHeader>
+          <DialogTitle>Performance Dashboard - {user.fullName || user.name || user.email}</DialogTitle>
+        </DialogHeader>
+        <div className="py-2">
+          {isLoading ? (
+            <div className="flex h-32 items-center justify-center text-muted-foreground">
+              <Loader2 className="h-6 w-6 animate-spin mr-2" />
+              Loading metrics...
+            </div>
+          ) : !analytics ? (
+             <div className="text-center text-sm text-muted-foreground p-4">No performance data available for this user.</div>
+          ) : (
+            <div className="space-y-6">
+              <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg border border-border/50">
+                <div>
+                  <h3 className="text-lg font-semibold">Overall Rating</h3>
+                  <p className="text-sm text-muted-foreground">Performance score based on recent activity</p>
+                </div>
+                <div className="text-3xl font-bold text-primary">
+                  {analytics.rating}%
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                <Card className="bg-muted/10 border-border/40 shadow-none">
+                  <CardContent className="p-4">
+                    <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">Leads Gen / Processed</p>
+                    <p className="text-2xl font-bold mt-1">{analytics.metrics?.leadsGenerated || 0}</p>
+                  </CardContent>
+                </Card>
+                <Card className="bg-muted/10 border-border/40 shadow-none">
+                  <CardContent className="p-4">
+                    <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">Orders Scheduled</p>
+                    <p className="text-2xl font-bold mt-1">{analytics.metrics?.ordersScheduled || 0}</p>
+                  </CardContent>
+                </Card>
+                <Card className="bg-emerald-500/5 border-emerald-500/20 shadow-none">
+                  <CardContent className="p-4">
+                    <p className="text-[10px] text-emerald-600 font-semibold uppercase tracking-wider">Orders Delivered</p>
+                    <p className="text-2xl font-bold mt-1 text-emerald-700">{analytics.metrics?.deliveredOrders || 0}</p>
+                  </CardContent>
+                </Card>
+                <Card className="bg-muted/10 border-border/40 shadow-none">
+                  <CardContent className="p-4">
+                    <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">Conversion Rate</p>
+                    <p className="text-2xl font-bold mt-1">{analytics.metrics?.conversionRate || 0}%</p>
+                  </CardContent>
+                </Card>
+                {(user.role === 'media_buyer' || user.role === 'admin') && (
+                  <>
+                    <Card className="bg-muted/10 border-border/40 shadow-none">
+                      <CardContent className="p-4">
+                        <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">Ad Spend</p>
+                        <p className="text-2xl font-bold mt-1">₦{(analytics.metrics?.adSpend || 0).toLocaleString()}</p>
+                      </CardContent>
+                    </Card>
+                    <Card className="bg-muted/10 border-border/40 shadow-none">
+                      <CardContent className="p-4">
+                        <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">Avg CPA</p>
+                        <p className="text-2xl font-bold mt-1">₦{(analytics.metrics?.cpa || 0).toLocaleString()}</p>
+                      </CardContent>
+                    </Card>
+                  </>
+                )}
+              </div>
+
+              <div className="pt-4 border-t border-border/50">
+                <h4 className="text-[11px] font-semibold mb-3 text-muted-foreground uppercase tracking-wider">Financial Overview</h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="p-3 rounded-md bg-muted/20 border border-border/40">
+                    <p className="text-xs text-muted-foreground">Base Salary</p>
+                    <p className="text-lg font-semibold">₦{(analytics.financials?.salary || user.salary || 0).toLocaleString()}</p>
+                  </div>
+                  <div className="p-3 rounded-md bg-emerald-500/10 border border-emerald-500/20">
+                    <p className="text-xs text-emerald-600 font-medium">Pending Commission</p>
+                    <p className="text-lg font-bold text-emerald-700">₦{(analytics.financials?.commission || user.currentCommission || 0).toLocaleString()}</p>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          )}
+        </div>
       </DialogContent>
     </Dialog>
   );
