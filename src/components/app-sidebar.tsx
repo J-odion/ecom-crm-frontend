@@ -17,6 +17,7 @@ import {
   Code2,
   History,
   Laptop,
+  BookOpen,
 } from "lucide-react";
 import {
   Sidebar,
@@ -91,6 +92,7 @@ const NAV: { group: string; items: NavItem[] }[] = [
   {
     group: "Finance",
     items: [
+      { to: "/accounting", label: "Accounting", icon: BookOpen, roles: ["accountant", "admin"] },
       { to: "/accountant", label: "Remittance", icon: ReceiptText, roles: ["accountant", "admin", "dev"] },
       { to: "/finance", label: "Finance", icon: Wallet, roles: ["admin", "dev", "accountant"] },
       { to: "/commission-rules", label: "Commission Rules", icon: Percent, roles: ["admin", "dev"] },

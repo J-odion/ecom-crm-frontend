@@ -3,8 +3,9 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiActions } from "@/lib/api";
 import { PageHeader } from "@/components/page-header";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { api } from "@/lib/api";
 import { StatusBadge } from "@/components/status-badge";
-import { Loader2, Laptop, Lock, Unlock, Eraser, UserPlus, UserMinus, ShieldAlert, ArrowLeft } from "lucide-react";
+import { Loader2, Laptop, Lock, Unlock, Eraser, UserPlus, UserMinus, ShieldAlert, ArrowLeft, MapPin } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
@@ -25,6 +26,17 @@ function DeviceDetailsPage() {
   const { data, isLoading, refetch } = useQuery({
     queryKey: ["device", id],
     queryFn: async () => (await apiActions.devices.get(id)).data,
+  });
+
+  const { data: statusData } = useQuery({
+    queryKey: ["device-status", id],
+    queryFn: async () => (await api.get(`/devices/${id}/status`)).data,
+    refetchInterval: 10000, // Poll every 10s
+  });
+
+  const { data: locData } = useQuery({
+    queryKey: ["device-location", id],
+    queryFn: async () => (await api.get(`/devices/${id}/location`)).data,
   });
 
   if (isLoading) {
@@ -108,7 +120,7 @@ function DeviceDetailsPage() {
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div>
                 <p className="text-muted-foreground text-xs uppercase tracking-wider mb-1">Status</p>
-                <StatusBadge status={device.status} />
+                <StatusBadge status={statusData?.status || device.status} />
               </div>
               <div>
                 <p className="text-muted-foreground text-xs uppercase tracking-wider mb-1">Platform</p>
@@ -128,9 +140,31 @@ function DeviceDetailsPage() {
               </div>
               <div>
                 <p className="text-muted-foreground text-xs uppercase tracking-wider mb-1">Last Seen</p>
-                <p className="font-medium">{device.lastSeenAt ? new Date(device.lastSeenAt).toLocaleString() : "Never"}</p>
+                <p className="font-medium">
+                  {statusData?.lastSeen ? new Date(statusData.lastSeen).toLocaleString() : 
+                   device.lastSeenAt ? new Date(device.lastSeenAt).toLocaleString() : "Never"}
+                </p>
               </div>
             </div>
+
+            {locData && (
+              <div className="mt-4 pt-4 border-t border-border">
+                <p className="text-muted-foreground text-xs uppercase tracking-wider mb-2 flex items-center"><MapPin className="h-3 w-3 mr-1" /> Last Known Location</p>
+                <div className="bg-muted/50 rounded-md p-4 flex items-center justify-between">
+                  <div className="font-mono text-sm">
+                    {locData.latitude.toFixed(6)}, {locData.longitude.toFixed(6)}
+                  </div>
+                  <a 
+                    href={`https://www.google.com/maps?q=${locData.latitude},${locData.longitude}`} 
+                    target="_blank" 
+                    rel="noreferrer"
+                    className="text-primary hover:underline text-sm"
+                  >
+                    View on Maps
+                  </a>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
 
