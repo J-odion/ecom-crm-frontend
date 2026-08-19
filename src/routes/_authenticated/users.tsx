@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/select";
 import { useState } from "react";
 import { toast } from "sonner";
-import { Loader2, UserPlus, Shield, MapPin, Trash2, Mail } from "lucide-react";
+import { Loader2, UserPlus, Shield, MapPin, Trash2, Mail, Laptop } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -335,6 +335,7 @@ function UserRow({ user, locations, onUpdate }: { user: any; locations: any[]; o
           </div>
         ) : (
           <div className="flex items-center justify-end gap-2">
+            <AssignDeviceToUserDialog user={user} onDone={onUpdate} />
             <Button size="sm" variant="outline" onClick={() => setIsEditing(true)}>Edit</Button>
             <Button
               size="sm"
@@ -506,6 +507,69 @@ function CreateUserDialog({ locations, onDone }: { locations: any[]; onDone: () 
           >
             {create.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
             Create User Account
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function AssignDeviceToUserDialog({ user, onDone }: { user: any; onDone: () => void }) {
+  const [open, setOpen] = useState(false);
+  const [selectedDevice, setSelectedDevice] = useState<string>("");
+  const [reason, setReason] = useState("");
+
+  const { data: devicesData, isLoading } = useQuery({
+    queryKey: ["devices"],
+    queryFn: async () => (await apiActions.devices.list()).data,
+    enabled: open,
+  });
+  const devices = Array.isArray(devicesData) ? devicesData : devicesData?.data || [];
+
+  const assign = useMutation({
+    mutationFn: async () => apiActions.devices.assign(selectedDevice, { userId: user.id || user._id, reason }),
+    onSuccess: () => {
+      toast.success("Device assigned to user");
+      setOpen(false);
+      onDone();
+    },
+    onError: (e: any) => toast.error(e.friendlyMessage || "Failed to assign device"),
+  });
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button size="sm" variant="outline" className="text-xs px-2" title="Assign Device">
+          <Laptop className="h-3 w-3" />
+        </Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader><DialogTitle>Assign Device to {user.fullName || user.name || user.email}</DialogTitle></DialogHeader>
+        <div className="space-y-4 py-4">
+          <div className="space-y-1.5">
+            <Label>Select Device</Label>
+            {isLoading ? <div className="text-xs flex items-center text-muted-foreground"><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Loading devices...</div> : (
+              <Select value={selectedDevice} onValueChange={setSelectedDevice}>
+                <SelectTrigger><SelectValue placeholder="Select a device" /></SelectTrigger>
+                <SelectContent>
+                  {devices.map((d: any) => (
+                    <SelectItem key={d.id || d._id} value={d.id || d._id}>
+                      {d.name} {d.serialNumber ? `(${d.serialNumber})` : ""}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          </div>
+          <div className="space-y-1.5">
+            <Label>Notes / Reason</Label>
+            <Input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="e.g. Work laptop" />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button onClick={() => assign.mutate()} disabled={!selectedDevice || assign.isPending}>
+            {assign.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+            Confirm Assignment
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -1,12 +1,20 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { api } from "@/lib/api";
 import { PageHeader } from "@/components/page-header";
 import { Card, CardContent } from "@/components/ui/card";
 import { StatusBadge } from "@/components/status-badge";
 import { EmptyState } from "@/components/empty-state";
-import { ShoppingCart, Loader2 } from "lucide-react";
+import { ShoppingCart, Loader2, MoreHorizontal } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useState } from "react";
 
 import { useAuth } from "@/lib/auth";
@@ -19,7 +27,27 @@ export const Route = createFileRoute("/_authenticated/orders")({
 
 function OrdersPage() {
   const { user } = useAuth();
+  const qc = useQueryClient();
   const [q, setQ] = useState("");
+
+  const setDelivery = useMutation({
+    mutationFn: async ({ id, status }: { id: string; status: string }) =>
+      (await api.patch(`/orders/${id}/delivery-status`, { status })).data,
+    onSuccess: () => {
+      toast.success("Order delivery status updated");
+      qc.invalidateQueries({ queryKey: ["orders"] });
+    },
+    onError: (e: any) => toast.error(e.friendlyMessage || "Failed to update"),
+  });
+
+  const cancel = useMutation({
+    mutationFn: async (id: string) => (await api.patch(`/orders/${id}/cancel`, {})).data,
+    onSuccess: () => {
+      toast.success("Order cancelled");
+      qc.invalidateQueries({ queryKey: ["orders"] });
+    },
+    onError: (e: any) => toast.error(e.friendlyMessage || "Failed to cancel"),
+  });
 
   if (user?.role === "sales_agent" || user?.role === "media_buyer") {
     return <UnauthorizedView />;
@@ -57,6 +85,7 @@ function OrdersPage() {
                     <th className="px-4 py-3 text-left">Product</th>
                     <th className="px-4 py-3 text-left">Amount</th>
                     <th className="px-4 py-3 text-left">Status</th>
+                    <th className="px-4 py-3 text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -73,6 +102,27 @@ function OrdersPage() {
                         <td className="px-4 py-3">{o.product || o.productName || "—"}</td>
                         <td className="px-4 py-3">{o.amount ? `₦${Number(o.amount).toLocaleString()}` : "—"}</td>
                         <td className="px-4 py-3"><StatusBadge status={o.status || o.deliveryStatus} /></td>
+                        <td className="px-4 py-3 text-right">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" className="h-8 w-8 p-0">
+                                <span className="sr-only">Open menu</span>
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => setDelivery.mutate({ id: String(id), status: "pending" })}>
+                                Mark Pending
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => setDelivery.mutate({ id: String(id), status: "delivered" })}>
+                                Mark Delivered
+                              </DropdownMenuItem>
+                              <DropdownMenuItem className="text-destructive focus:bg-destructive focus:text-destructive-foreground" onClick={() => cancel.mutate(String(id))}>
+                                Cancel Order
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </td>
                       </tr>
                     );
                   })}
