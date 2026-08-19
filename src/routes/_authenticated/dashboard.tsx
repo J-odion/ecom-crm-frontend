@@ -186,7 +186,7 @@ function Dashboard() {
       )}
 
       {/* RENDER CUSTOMER SERVICE AGENT DASHBOARD */}
-      {currentRole === "customer_service" && (
+      {(currentRole === "customer_service" || currentRole === "customer_service_manager") && (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <StatCard
             label="Today's Deliveries"
@@ -328,12 +328,14 @@ function Dashboard() {
       {/* RENDER TEAM MANAGER DASHBOARD VIEW */}
       {(currentRole === "customer_service_manager" ||
         currentRole === "logistics_manager" ||
+        currentRole === "hr" ||
+        currentRole === "admin" ||
         currentRole === "marketing_manager") && (
         <div className="space-y-6">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Users className="h-5 w-5 text-primary" /> Managed Team Performance
+                <Users className="h-5 w-5 text-primary" /> Staff Performance Overview
               </CardTitle>
               <CardDescription>
                 Real-time tracking of staff members assigned to your team.
@@ -491,7 +493,7 @@ function Dashboard() {
           <CardContent className="flex flex-col gap-2">
             {(currentRole === "customer_service" || currentRole === "customer_service_manager") && (
               <Button asChild variant="secondary">
-                <Link to="/leads">Process Leads</Link>
+                <Link to="/orders">Process Leads & Orders</Link>
               </Button>
             )}
             {(currentRole === "logistics" || currentRole === "logistics_manager") && (

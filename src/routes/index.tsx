@@ -12,7 +12,7 @@ function Index() {
 
   const roleRedirects: Record<string, string> = {
     sales_agent: "/media-buyer",
-    customer_service: "/leads",
+    customer_service: "/orders",
     logistics: "/deliveries",
     delivery_agent: "/deliveries",
     accountant: "/accountant",

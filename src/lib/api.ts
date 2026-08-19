@@ -79,6 +79,7 @@ export type Role =
   | "customer_service_manager"
   | "logistics_manager"
   | "marketing_manager"
+  | "hr"
   | "dev"
   | "manager";
 
@@ -94,6 +95,7 @@ export const ROLE_LABEL: Record<Role, string> = {
   customer_service_manager: "CS Manager",
   logistics_manager: "Logistics Manager",
   marketing_manager: "Marketing Manager",
+  hr: "Human Resources",
   dev: "Developer",
   manager: "General Manager",
 };

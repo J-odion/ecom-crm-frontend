@@ -70,6 +70,23 @@ function OrdersPage() {
     scheduleDate: new Date().toISOString().split("T")[0]
   });
 
+  // Delivered Modal State
+  const [deliveredItem, setDeliveredItem] = useState<any | null>(null);
+  const [deliveredData, setDeliveredData] = useState({
+    agent: "",
+    quantity: 1,
+    amountPaid: "",
+    deliveryFee: "",
+    deliveryDate: new Date().toISOString().split("T")[0],
+    soldBy: "",
+    expenseName: "",
+    expenseAmount: ""
+  });
+
+  // Status Reason Modal State
+  const [statusReasonItem, setStatusReasonItem] = useState<{ item: any, status: string, isLead: boolean } | null>(null);
+  const [statusReason, setStatusReason] = useState("");
+
   const isPendingTab = activeTab === "pending";
 
   const { data: pendingData, isLoading: loadingPending } = useQuery({
@@ -112,11 +129,11 @@ function OrdersPage() {
 
   // --- Mutations ---
   const updateStatus = useMutation({
-    mutationFn: async ({ id, status, isLead }: { id: string; status: string; isLead: boolean }) => {
+    mutationFn: async ({ id, status, isLead, payload }: { id: string; status: string; isLead: boolean, payload?: any }) => {
       if (isLead) {
         return (await apiActions.leads.updateStatus(id, status)).data;
       }
-      return (await api.patch(`/orders/${id}/delivery-status`, { status })).data;
+      return (await api.patch(`/orders/${id}/delivery-status`, { status, ...payload })).data;
     },
     onSuccess: (_, variables) => {
       toast.success(`Marked as ${variables.status}`);
@@ -282,19 +299,22 @@ function OrdersPage() {
                                   </DropdownMenuItem>
                                 )}
                                 <DropdownMenuSeparator />
-                                <DropdownMenuItem onClick={() => updateStatus.mutate({ id: String(id), status: "delivered", isLead })}>
+                                <DropdownMenuItem onClick={() => {
+                                  setDeliveredData({ agent: "", quantity: 1, amountPaid: "", deliveryFee: "", deliveryDate: new Date().toISOString().split("T")[0], soldBy: "", expenseName: "", expenseAmount: "" });
+                                  setDeliveredItem(o);
+                                }}>
                                   Mark Delivered
                                 </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => updateStatus.mutate({ id: String(id), status: "failed", isLead })}>
+                                <DropdownMenuItem onClick={() => setStatusReasonItem({ item: o, status: "failed", isLead })}>
                                   Mark Failed
                                 </DropdownMenuItem>
-                                <DropdownMenuItem className="text-destructive focus:bg-destructive focus:text-destructive-foreground" onClick={() => updateStatus.mutate({ id: String(id), status: "cancelled", isLead })}>
+                                <DropdownMenuItem className="text-destructive focus:bg-destructive focus:text-destructive-foreground" onClick={() => setStatusReasonItem({ item: o, status: "cancelled", isLead })}>
                                   Cancel
                                 </DropdownMenuItem>
-                                <DropdownMenuItem className="text-destructive focus:bg-destructive focus:text-destructive-foreground" onClick={() => updateStatus.mutate({ id: String(id), status: "banned", isLead })}>
+                                <DropdownMenuItem className="text-destructive focus:bg-destructive focus:text-destructive-foreground" onClick={() => setStatusReasonItem({ item: o, status: "banned", isLead })}>
                                   Ban Customer
                                 </DropdownMenuItem>
-                                <DropdownMenuItem className="text-destructive focus:bg-destructive focus:text-destructive-foreground" onClick={() => updateStatus.mutate({ id: String(id), status: "deleted", isLead })}>
+                                <DropdownMenuItem className="text-destructive focus:bg-destructive focus:text-destructive-foreground" onClick={() => setStatusReasonItem({ item: o, status: "deleted", isLead })}>
                                   Delete
                                 </DropdownMenuItem>
                               </DropdownMenuContent>
@@ -450,6 +470,116 @@ function OrdersPage() {
             <Button onClick={() => scheduleOrder.mutate()} disabled={!scheduleData.address.trim() || scheduleOrder.isPending}>
               {scheduleOrder.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               Confirm & Schedule
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* MARK DELIVERED MODAL */}
+      <Dialog open={!!deliveredItem} onOpenChange={(open) => !open && setDeliveredItem(null)}>
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Mark Order as Delivered</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label>Delivery Agent</Label>
+                <Input value={deliveredData.agent} onChange={(e) => setDeliveredData({...deliveredData, agent: e.target.value})} placeholder="Agent Name" />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Sold By</Label>
+                <Input value={deliveredData.soldBy} onChange={(e) => setDeliveredData({...deliveredData, soldBy: e.target.value})} placeholder="Sales Rep" />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label>Quantity</Label>
+                <Input type="number" min={1} value={deliveredData.quantity} onChange={(e) => setDeliveredData({...deliveredData, quantity: parseInt(e.target.value) || 1})} />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Delivery Date</Label>
+                <Input type="date" value={deliveredData.deliveryDate} onChange={(e) => setDeliveredData({...deliveredData, deliveryDate: e.target.value})} />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label>Amount Paid by Customer</Label>
+                <Input type="number" value={deliveredData.amountPaid} onChange={(e) => setDeliveredData({...deliveredData, amountPaid: e.target.value})} placeholder="0" />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Delivery Fee</Label>
+                <Input type="number" value={deliveredData.deliveryFee} onChange={(e) => setDeliveredData({...deliveredData, deliveryFee: e.target.value})} placeholder="0" />
+              </div>
+            </div>
+            
+            <div className="pt-4 border-t border-border/50">
+              <Label className="text-muted-foreground mb-2 block">Extra Expense (Optional)</Label>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <Input value={deliveredData.expenseName} onChange={(e) => setDeliveredData({...deliveredData, expenseName: e.target.value})} placeholder="Expense Name" />
+                </div>
+                <div className="space-y-1.5">
+                  <Input type="number" value={deliveredData.expenseAmount} onChange={(e) => setDeliveredData({...deliveredData, expenseAmount: e.target.value})} placeholder="Amount" />
+                </div>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeliveredItem(null)}>Cancel</Button>
+            <Button 
+              onClick={() => {
+                updateStatus.mutate({ 
+                  id: String(deliveredItem._id || deliveredItem.id), 
+                  status: "delivered", 
+                  isLead: isPendingTab,
+                  payload: { ...deliveredData, amountPaid: Number(deliveredData.amountPaid), deliveryFee: Number(deliveredData.deliveryFee) }
+                });
+                setDeliveredItem(null);
+              }} 
+              disabled={!deliveredData.agent || updateStatus.isPending}
+            >
+              {updateStatus.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Mark Delivered
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* STATUS REASON MODAL */}
+      <Dialog open={!!statusReasonItem} onOpenChange={(open) => !open && setStatusReasonItem(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="capitalize">Mark as {statusReasonItem?.status}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <Label>Please provide a reason</Label>
+            <Textarea 
+              placeholder="Why are you making this change?" 
+              value={statusReason} 
+              onChange={(e) => setStatusReason(e.target.value)}
+              className="min-h-[100px]"
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setStatusReasonItem(null); setStatusReason(""); }}>Cancel</Button>
+            <Button 
+              variant={statusReasonItem?.status === 'deleted' || statusReasonItem?.status === 'banned' ? 'destructive' : 'default'}
+              onClick={() => {
+                if (!statusReasonItem) return;
+                updateStatus.mutate({ 
+                  id: String(statusReasonItem.item._id || statusReasonItem.item.id), 
+                  status: statusReasonItem.status, 
+                  isLead: statusReasonItem.isLead,
+                  payload: { reason: statusReason }
+                });
+                setStatusReasonItem(null);
+                setStatusReason("");
+              }} 
+              disabled={!statusReason.trim() || updateStatus.isPending}
+            >
+              {updateStatus.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Confirm Status
             </Button>
           </DialogFooter>
         </DialogContent>
