@@ -48,6 +48,13 @@ const STATUS_TABS = [
   "banned"
 ];
 
+const MEDIA_BUYER_TABS = [
+  "pending",
+  "abandoned",
+  "scheduled",
+  "delivered"
+];
+
 function OrdersPage() {
   const { user } = useAuth();
   const qc = useQueryClient();
@@ -195,9 +202,12 @@ function OrdersPage() {
   });
 
 
-  if (user?.role === "sales_agent" || user?.role === "media_buyer") {
+  if (user?.role === "sales_agent") {
     return <UnauthorizedView />;
   }
+
+  const isMediaBuyer = user?.role === "media_buyer";
+  const tabsToRender = isMediaBuyer ? MEDIA_BUYER_TABS : STATUS_TABS;
 
   const handleCopy = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
@@ -211,7 +221,7 @@ function OrdersPage() {
       <div className="flex flex-col sm:flex-row justify-between gap-4">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full overflow-x-auto">
           <TabsList className="w-max inline-flex">
-            {STATUS_TABS.map(tab => (
+            {tabsToRender.map(tab => (
               <TabsTrigger key={tab} value={tab} className="capitalize">
                 {tab}
               </TabsTrigger>
@@ -250,9 +260,11 @@ function OrdersPage() {
                     <th className="px-4 py-3 text-left">ID / Ref</th>
                     <th className="px-4 py-3 text-left">Customer</th>
                     <th className="px-4 py-3 text-left">Product</th>
+                    {isMediaBuyer && <th className="px-4 py-3 text-left">Form Name</th>}
                     {!isLeadTab && <th className="px-4 py-3 text-left">Amount</th>}
+                    {isMediaBuyer && <th className="px-4 py-3 text-left">Date</th>}
                     <th className="px-4 py-3 text-left">Status</th>
-                    <th className="px-4 py-3 text-right">Actions</th>
+                    {!isMediaBuyer && <th className="px-4 py-3 text-right">Actions</th>}
                   </tr>
                 </thead>
                 <tbody>
@@ -273,59 +285,69 @@ function OrdersPage() {
                           </div>
                         </td>
                         <td className="px-4 py-3">{o.product || o.productName || "—"}</td>
+                        {isMediaBuyer && (
+                          <td className="px-4 py-3 text-muted-foreground">{o.formName || "—"}</td>
+                        )}
                         {!isLeadTab && (
                           <td className="px-4 py-3">{o.amount ? `₦${Number(o.amount).toLocaleString()}` : "—"}</td>
+                        )}
+                        {isMediaBuyer && (
+                          <td className="px-4 py-3 text-muted-foreground">
+                            {o.createdAt ? new Date(o.createdAt).toLocaleDateString() : (o.scheduleDate ? new Date(o.scheduleDate).toLocaleDateString() : "—")}
+                          </td>
                         )}
                         <td className="px-4 py-3">
                           <StatusBadge status={o.status || o.deliveryStatus || (isLead ? "pending" : "")} />
                         </td>
-                        <td className="px-4 py-3 text-right">
-                          <div className="flex items-center justify-end gap-2">
-                            <Button size="sm" variant="outline" onClick={() => setViewItem(o)}>
-                              View
-                            </Button>
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" className="h-8 w-8 p-0">
-                                  <span className="sr-only">Open menu</span>
-                                  <MoreHorizontal className="h-4 w-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end" className="w-40">
-                                <DropdownMenuItem onClick={() => setCommentItem(o)}>
-                                  Add Comment
-                                </DropdownMenuItem>
-                                {isLead && (
-                                  <DropdownMenuItem onClick={() => {
-                                    setScheduleData({ address: o.address || "", quantity: 1, notes: "" });
-                                    setScheduleItem(o);
-                                  }}>
-                                    Schedule Order
+                        {!isMediaBuyer && (
+                          <td className="px-4 py-3 text-right">
+                            <div className="flex items-center justify-end gap-2">
+                              <Button size="sm" variant="outline" onClick={() => setViewItem(o)}>
+                                View
+                              </Button>
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" className="h-8 w-8 p-0">
+                                    <span className="sr-only">Open menu</span>
+                                    <MoreHorizontal className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end" className="w-40">
+                                  <DropdownMenuItem onClick={() => setCommentItem(o)}>
+                                    Add Comment
                                   </DropdownMenuItem>
-                                )}
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem onClick={() => {
-                                  setDeliveredData({ agent: "", quantity: 1, amountPaid: "", deliveryFee: "", deliveryDate: new Date().toISOString().split("T")[0], soldBy: "", expenseName: "", expenseAmount: "" });
-                                  setDeliveredItem(o);
-                                }}>
-                                  Mark Delivered
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => setStatusReasonItem({ item: o, status: "failed", isLead })}>
-                                  Mark Failed
-                                </DropdownMenuItem>
-                                <DropdownMenuItem className="text-destructive focus:bg-destructive focus:text-destructive-foreground" onClick={() => setStatusReasonItem({ item: o, status: "cancelled", isLead })}>
-                                  Cancel
-                                </DropdownMenuItem>
-                                <DropdownMenuItem className="text-destructive focus:bg-destructive focus:text-destructive-foreground" onClick={() => setStatusReasonItem({ item: o, status: "banned", isLead })}>
-                                  Ban Customer
-                                </DropdownMenuItem>
-                                <DropdownMenuItem className="text-destructive focus:bg-destructive focus:text-destructive-foreground" onClick={() => setStatusReasonItem({ item: o, status: "deleted", isLead })}>
-                                  Delete
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </div>
-                        </td>
+                                  {isLead && (
+                                    <DropdownMenuItem onClick={() => {
+                                      setScheduleData({ address: o.address || "", quantity: 1, notes: "" });
+                                      setScheduleItem(o);
+                                    }}>
+                                      Schedule Order
+                                    </DropdownMenuItem>
+                                  )}
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem onClick={() => {
+                                    setDeliveredData({ agent: "", quantity: 1, amountPaid: "", deliveryFee: "", deliveryDate: new Date().toISOString().split("T")[0], soldBy: "", expenseName: "", expenseAmount: "" });
+                                    setDeliveredItem(o);
+                                  }}>
+                                    Mark Delivered
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => setStatusReasonItem({ item: o, status: "failed", isLead })}>
+                                    Mark Failed
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem className="text-destructive focus:bg-destructive focus:text-destructive-foreground" onClick={() => setStatusReasonItem({ item: o, status: "cancelled", isLead })}>
+                                    Cancel
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem className="text-destructive focus:bg-destructive focus:text-destructive-foreground" onClick={() => setStatusReasonItem({ item: o, status: "banned", isLead })}>
+                                    Ban Customer
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem className="text-destructive focus:bg-destructive focus:text-destructive-foreground" onClick={() => setStatusReasonItem({ item: o, status: "deleted", isLead })}>
+                                    Delete
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </div>
+                          </td>
+                        )}
                       </tr>
                     );
                   })}

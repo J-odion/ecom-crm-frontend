@@ -62,6 +62,9 @@ function UsersPage() {
 
   const canCreate = user?.role === "admin" || user?.role === "dev";
 
+  const [dashboardUser, setDashboardUser] = useState<any | null>(null);
+  const [deviceUser, setDeviceUser] = useState<any | null>(null);
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -115,6 +118,8 @@ function UsersPage() {
                       user={u}
                       locations={locations}
                       onUpdate={() => qc.invalidateQueries({ queryKey: ["users"] })}
+                      onOpenDashboard={() => setDashboardUser(u)}
+                      onOpenDevice={() => setDeviceUser(u)}
                     />
                   ))}
                 </tbody>
@@ -123,11 +128,18 @@ function UsersPage() {
           )}
         </CardContent>
       </Card>
+
+      <UserDashboardDialog user={dashboardUser} onClose={() => setDashboardUser(null)} />
+      <AssignDeviceToUserDialog 
+        user={deviceUser} 
+        onClose={() => setDeviceUser(null)} 
+        onDone={() => qc.invalidateQueries({ queryKey: ["users"] })} 
+      />
     </div>
   );
 }
 
-function UserRow({ user, locations, onUpdate }: { user: any; locations: any[]; onUpdate: () => void }) {
+function UserRow({ user, locations, onUpdate, onOpenDashboard, onOpenDevice }: { user: any; locations: any[]; onUpdate: () => void; onOpenDashboard: () => void; onOpenDevice: () => void; }) {
   const [isEditing, setIsEditing] = useState(false);
   const [role, setRole] = useState<Role>(user.role);
   const [locationId, setLocationId] = useState<string>(user.locationId || "none");
@@ -335,8 +347,12 @@ function UserRow({ user, locations, onUpdate }: { user: any; locations: any[]; o
           </div>
         ) : (
           <div className="flex items-center justify-end gap-2">
-            <UserDashboardDialog user={user} />
-            <AssignDeviceToUserDialog user={user} onDone={onUpdate} />
+            <Button size="sm" variant="outline" className="text-xs px-2" title="Performance Dashboard" onClick={onOpenDashboard}>
+              <BarChart2 className="h-4 w-4 text-primary" />
+            </Button>
+            <Button size="sm" variant="outline" className="text-xs px-2" title="Assign Device" onClick={onOpenDevice}>
+              <Laptop className="h-3 w-3" />
+            </Button>
             <Button size="sm" variant="outline" onClick={() => setIsEditing(true)}>Edit</Button>
             <Button
               size="sm"
@@ -515,15 +531,16 @@ function CreateUserDialog({ locations, onDone }: { locations: any[]; onDone: () 
   );
 }
 
-function AssignDeviceToUserDialog({ user, onDone }: { user: any; onDone: () => void }) {
-  const [open, setOpen] = useState(false);
+function AssignDeviceToUserDialog({ user, onClose, onDone }: { user: any; onClose: () => void; onDone: () => void }) {
   const [selectedDevice, setSelectedDevice] = useState<string>("");
   const [reason, setReason] = useState("");
+
+  const isOpen = !!user;
 
   const { data: devicesData, isLoading } = useQuery({
     queryKey: ["devices"],
     queryFn: async () => (await apiActions.devices.list()).data,
-    enabled: open,
+    enabled: isOpen,
   });
   const devices = Array.isArray(devicesData) ? devicesData : devicesData?.data || [];
 
@@ -531,21 +548,16 @@ function AssignDeviceToUserDialog({ user, onDone }: { user: any; onDone: () => v
     mutationFn: async () => apiActions.devices.assign(selectedDevice, { userId: user.id || user._id, reason }),
     onSuccess: () => {
       toast.success("Device assigned to user");
-      setOpen(false);
+      onClose();
       onDone();
     },
     onError: (e: any) => toast.error(e.friendlyMessage || "Failed to assign device"),
   });
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button size="sm" variant="outline" className="text-xs px-2" title="Assign Device">
-          <Laptop className="h-3 w-3" />
-        </Button>
-      </DialogTrigger>
+    <Dialog open={isOpen} onOpenChange={(val) => !val && onClose()}>
       <DialogContent>
-        <DialogHeader><DialogTitle>Assign Device to {user.fullName || user.name || user.email}</DialogTitle></DialogHeader>
+        <DialogHeader><DialogTitle>Assign Device to {user?.fullName || user?.name || user?.email}</DialogTitle></DialogHeader>
         <div className="space-y-4 py-4">
           <div className="space-y-1.5">
             <Label>Select Device</Label>
@@ -578,27 +590,22 @@ function AssignDeviceToUserDialog({ user, onDone }: { user: any; onDone: () => v
   );
 }
 
-export function UserDashboardDialog({ user }: { user: any }) {
-  const [open, setOpen] = useState(false);
+export function UserDashboardDialog({ user, onClose }: { user: any; onClose: () => void }) {
+  const isOpen = !!user;
 
   const { data: analyticsData, isLoading } = useQuery({
-    queryKey: ["userAnalytics", user.id || user._id],
-    queryFn: async () => (await api.get(`/analytics/users/${user.id || user._id}`)).data,
-    enabled: open,
+    queryKey: ["userAnalytics", user?.id || user?._id],
+    queryFn: async () => (await api.get(`/analytics/users/${user?.id || user?._id}`)).data,
+    enabled: isOpen,
   });
 
   const analytics = analyticsData?.data || analyticsData;
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button size="sm" variant="outline" className="text-xs px-2" title="Performance Dashboard">
-          <BarChart2 className="h-4 w-4 text-primary" />
-        </Button>
-      </DialogTrigger>
+    <Dialog open={isOpen} onOpenChange={(val) => !val && onClose()}>
       <DialogContent className="max-w-3xl">
         <DialogHeader>
-          <DialogTitle>Performance Dashboard - {user.fullName || user.name || user.email}</DialogTitle>
+          <DialogTitle>Performance Dashboard - {user?.fullName || user?.name || user?.email}</DialogTitle>
         </DialogHeader>
         <div className="py-2">
           {isLoading ? (
@@ -645,7 +652,7 @@ export function UserDashboardDialog({ user }: { user: any }) {
                     <p className="text-2xl font-bold mt-1">{analytics.metrics?.conversionRate || 0}%</p>
                   </CardContent>
                 </Card>
-                {(user.role === 'media_buyer' || user.role === 'admin') && (
+                {(user?.role === 'media_buyer' || user?.role === 'admin') && (
                   <>
                     <Card className="bg-muted/10 border-border/40 shadow-none">
                       <CardContent className="p-4">
@@ -668,11 +675,11 @@ export function UserDashboardDialog({ user }: { user: any }) {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="p-3 rounded-md bg-muted/20 border border-border/40">
                     <p className="text-xs text-muted-foreground">Base Salary</p>
-                    <p className="text-lg font-semibold">₦{(analytics.financials?.salary || user.salary || 0).toLocaleString()}</p>
+                    <p className="text-lg font-semibold">₦{(analytics.financials?.salary || user?.salary || 0).toLocaleString()}</p>
                   </div>
                   <div className="p-3 rounded-md bg-emerald-500/10 border border-emerald-500/20">
                     <p className="text-xs text-emerald-600 font-medium">Pending Commission</p>
-                    <p className="text-lg font-bold text-emerald-700">₦{(analytics.financials?.commission || user.currentCommission || 0).toLocaleString()}</p>
+                    <p className="text-lg font-bold text-emerald-700">₦{(analytics.financials?.commission || user?.currentCommission || 0).toLocaleString()}</p>
                   </div>
                 </div>
               </div>

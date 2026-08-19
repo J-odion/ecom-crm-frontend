@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Megaphone, Loader2 } from "lucide-react";
+import { useAuth } from "@/lib/auth";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
 
 export const Route = createFileRoute("/_authenticated/media-buyer")({
@@ -92,46 +93,82 @@ function MediaBuyerPage() {
 }
 
 function SpendLogCard({ onDone }: { onDone: () => void }) {
+  const { user } = useAuth();
   const [form, setForm] = useState({
     date: new Date().toISOString().slice(0, 10),
     amount_spent: "",
     amount_received: "",
-    product: "",
+    order_count: "",
+    media_buyer_name: user?.fullName || user?.name || user?.email || "",
   });
+
+  const spent = Number(form.amount_spent) || 0;
+  const received = Number(form.amount_received) || 0;
+  const orderCount = Number(form.order_count) || 0;
+  const cpa = orderCount > 0 ? spent / orderCount : 0;
+  const balance = received - spent;
+
   const log = useMutation({
     mutationFn: async () =>
       (await api.post("/media-buyers/spend-log", {
         date: form.date,
-        amount_spent: Number(form.amount_spent) || 0,
-        amount_received: Number(form.amount_received) || 0,
-        product: form.product,
+        media_buyer_name: form.media_buyer_name,
+        amount_spent: spent,
+        amount_received: received,
+        order_count: orderCount,
+        cpa: cpa,
+        balance: balance,
       })).data,
     onSuccess: () => {
       toast.success("Spend log saved");
-      setForm({ ...form, amount_spent: "", amount_received: "", product: "" });
+      setForm({ ...form, amount_spent: "", amount_received: "", order_count: "" });
       onDone();
     },
     onError: (e: any) => toast.error(e.friendlyMessage || "Failed"),
   });
 
-  const balance = (Number(form.amount_received) || 0) - (Number(form.amount_spent) || 0);
-
   return (
     <Card>
-      <CardHeader><CardTitle>Log daily spend</CardTitle></CardHeader>
+      <CardHeader><CardTitle>Log Daily Spend</CardTitle></CardHeader>
       <CardContent className="space-y-3">
-        <div><Label className="mb-1.5 block">Date</Label><Input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} /></div>
-        <div><Label className="mb-1.5 block">Product</Label><Input value={form.product} onChange={(e) => setForm({ ...form, product: e.target.value })} /></div>
+        <div>
+          <Label className="mb-1.5 block">Date</Label>
+          <Input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} />
+        </div>
+        <div>
+          <Label className="mb-1.5 block">Media Buyer Name</Label>
+          <Input value={form.media_buyer_name} onChange={(e) => setForm({ ...form, media_buyer_name: e.target.value })} />
+        </div>
         <div className="grid grid-cols-2 gap-2">
-          <div><Label className="mb-1.5 block">Spent (₦)</Label><Input type="number" value={form.amount_spent} onChange={(e) => setForm({ ...form, amount_spent: e.target.value })} /></div>
-          <div><Label className="mb-1.5 block">Received (₦)</Label><Input type="number" value={form.amount_received} onChange={(e) => setForm({ ...form, amount_received: e.target.value })} /></div>
+          <div>
+            <Label className="mb-1.5 block">Total Adspend (₦)</Label>
+            <Input type="number" value={form.amount_spent} onChange={(e) => setForm({ ...form, amount_spent: e.target.value })} />
+          </div>
+          <div>
+            <Label className="mb-1.5 block">Funds Received (₦)</Label>
+            <Input type="number" value={form.amount_received} onChange={(e) => setForm({ ...form, amount_received: e.target.value })} />
+          </div>
         </div>
-        <div className="rounded-md bg-muted/40 p-3 text-sm">
-          Balance: <span className={balance >= 0 ? "font-semibold text-success" : "font-semibold text-destructive"}>₦{balance.toLocaleString()}</span>
+        <div>
+          <Label className="mb-1.5 block">Order Count</Label>
+          <Input type="number" value={form.order_count} onChange={(e) => setForm({ ...form, order_count: e.target.value })} />
         </div>
-        <Button onClick={() => log.mutate()} disabled={log.isPending} className="w-full">
+        
+        <div className="grid grid-cols-2 gap-2 mt-4 rounded-md bg-muted/40 p-3 text-sm">
+          <div>
+            <div className="text-muted-foreground text-xs">Calculated CPA</div>
+            <div className="font-semibold">₦{cpa.toLocaleString(undefined, { maximumFractionDigits: 2 })}</div>
+          </div>
+          <div>
+            <div className="text-muted-foreground text-xs">Balance</div>
+            <div className={balance >= 0 ? "font-semibold text-success" : "font-semibold text-destructive"}>
+              ₦{balance.toLocaleString()}
+            </div>
+          </div>
+        </div>
+        <Button onClick={() => log.mutate()} disabled={log.isPending} className="w-full mt-2">
           {log.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-          Save log
+          Save Log
         </Button>
       </CardContent>
     </Card>

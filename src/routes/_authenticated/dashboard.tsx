@@ -206,7 +206,7 @@ function Dashboard() {
             icon={ShoppingCart}
           />
           <StatCard
-            label="Weekly Processed Leads"
+            label="Weekly Processed Orders"
             value={performance.metrics?.weeklyProcessed ?? performance.weeklyProcessed ?? 0}
             icon={Package}
           />
@@ -248,7 +248,7 @@ function Dashboard() {
             accent={performance.balance >= 0 ? "success" : "destructive"}
           />
           <StatCard
-            label="Leads Generated"
+            label="Orders Generated"
             value={performance.leadsGenerated ?? 0}
             icon={Activity}
           />
@@ -472,7 +472,7 @@ function Dashboard() {
             <CardContent className="space-y-4">
               <p className="text-sm text-muted-foreground">
                 As a Media Buyer, your customer database access is disabled to protect client privacy.
-                You can record your ad campaigns spend and analyze lead attribution metrics.
+                You can record your ad campaigns spend and analyze order attribution metrics.
               </p>
               <div className="flex gap-2">
                 <Button asChild variant="secondary" className="text-xs">
@@ -493,7 +493,7 @@ function Dashboard() {
           <CardContent className="flex flex-col gap-2">
             {(currentRole === "customer_service" || currentRole === "customer_service_manager") && (
               <Button asChild variant="secondary">
-                <Link to="/orders">Process Leads & Orders</Link>
+                <Link to="/orders">Process Orders</Link>
               </Button>
             )}
             {(currentRole === "logistics" || currentRole === "logistics_manager") && (

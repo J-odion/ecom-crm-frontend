@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiActions } from "@/lib/api";
 import { PageHeader } from "@/components/page-header";
@@ -69,7 +69,12 @@ function LeadFormsPage() {
         description="Create and manage embeddable forms for your landing pages."
         actions={
           <RoleGate allowedRoles={["admin"]}>
-            <CreateFormDialog onDone={() => qc.invalidateQueries({ queryKey: ["lead-forms"] })} />
+            <Button asChild>
+              <Link to="/lead-forms/create">
+                <Plus className="h-4 w-4 mr-2" />
+                Create Form
+              </Link>
+            </Button>
           </RoleGate>
         }
       />
@@ -250,139 +255,3 @@ function FormCard({ form }: { form: any }) {
   );
 }
 
-function CreateFormDialog({ onDone }: { onDone: () => void }) {
-  const [open, setOpen] = useState(false);
-  const [name, setName] = useState("");
-  const [productId, setProductId] = useState("");
-  const [mediaBuyerId, setMediaBuyerId] = useState("");
-  const [buttonText, setButtonText] = useState("Order Now");
-  const [buttonColor, setButtonColor] = useState("#000000");
-
-  const { data: productsData } = useQuery({
-    queryKey: ["inventory-products"],
-    queryFn: async () => (await apiActions.inventory.products()).data,
-  });
-
-  const { data: usersData } = useQuery({
-    queryKey: ["users"],
-    queryFn: async () => (await apiActions.users.list()).data,
-  });
-
-  const products: any[] = Array.isArray(productsData) ? productsData : productsData?.data || [];
-  const mediaBuyers = (Array.isArray(usersData) ? usersData : usersData?.data || []).filter(
-    (u: any) => u.role === "sales_agent" || u.role === "media_buyer" || u.role === "admin" || u.role === "marketing_manager"
-  );
-
-  const create = useMutation({
-    mutationFn: () =>
-      apiActions.leadForms.create({
-        title: name,
-        productId,
-        sourceMediaBuyerId: mediaBuyerId,
-        primaryColor: buttonColor,
-        submitButtonText: buttonText,
-        defaultSource: "FACEBOOK",
-      }),
-    onSuccess: () => {
-      toast.success("Lead form created");
-      setOpen(false);
-      setName("");
-      setProductId("");
-      setMediaBuyerId("");
-      onDone();
-    },
-    onError: (err: any) => toast.error(err.friendlyMessage || "Failed to create"),
-  });
-
-  return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button>
-          <Plus className="h-4 w-4 mr-2" />
-          Create Form
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="sm:max-w-lg">
-        <DialogHeader>
-          <DialogTitle>New Lead Form</DialogTitle>
-        </DialogHeader>
-        <div className="grid gap-4 py-4 sm:grid-cols-2">
-          <div className="sm:col-span-2 space-y-1.5">
-            <Label htmlFor="form-name">Internal Name</Label>
-            <Input
-              id="form-name"
-              placeholder="e.g. FB Ad Campaign - Luxury Watch"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label>Linked Product</Label>
-            <Select value={productId} onValueChange={setProductId}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select product" />
-              </SelectTrigger>
-              <SelectContent>
-                {products.map((p) => (
-                  <SelectItem key={p.id || p._id} value={p.id || p._id}>
-                    {p.name || p.productName}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-1.5">
-            <Label>Attributed Media Buyer</Label>
-            <Select value={mediaBuyerId} onValueChange={setMediaBuyerId}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select staff" />
-              </SelectTrigger>
-              <SelectContent>
-                {mediaBuyers.map((mb: any) => (
-                  <SelectItem key={mb.id || mb._id} value={mb.id || mb._id}>
-                    {mb.email}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="btn-text">Button Text</Label>
-            <Input
-              id="btn-text"
-              value={buttonText}
-              onChange={(e) => setButtonText(e.target.value)}
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="btn-color">Button Color</Label>
-            <div className="flex gap-2">
-              <Input
-                id="btn-color"
-                type="color"
-                className="w-12 p-1 h-10"
-                value={buttonColor}
-                onChange={(e) => setButtonColor(e.target.value)}
-              />
-              <Input
-                value={buttonColor}
-                onChange={(e) => setButtonColor(e.target.value)}
-                placeholder="#000000"
-              />
-            </div>
-          </div>
-        </div>
-        <DialogFooter>
-          <Button
-            onClick={() => create.mutate()}
-            disabled={!name || !productId || !mediaBuyerId || create.isPending}
-            className="w-full"
-          >
-            {create.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-            Generate Form
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-}
