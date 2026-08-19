@@ -130,14 +130,11 @@ function SpendLogCard({ onDone }: { onDone: () => void }) {
   const log = useMutation({
     mutationFn: async () =>
       (await api.post("/media-buyers/spend-log", {
-        date: form.date,
-        media_buyer_name: form.media_buyer_name,
-        amount_spent: spent,
-        amount_received: received,
-        order_count: orderCount,
+        mediaBuyerId: user?._id || user?.id,
+        date: new Date(form.date).toISOString(),
+        amountSpent: spent,
+        amountReceived: received,
         product_name: form.product_name,
-        cpa: cpa,
-        balance: balance,
       })).data,
     onSuccess: () => {
       toast.success("Spend log saved");

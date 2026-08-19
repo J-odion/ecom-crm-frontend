@@ -12,6 +12,7 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { apiActions } from "@/lib/api";
+import { useAuth } from "@/lib/auth";
 
 export const Route = createFileRoute("/_authenticated/lead-forms/create")({
   component: CreateLeadFormPage,
@@ -29,6 +30,7 @@ const FIELD_DEFAULTS = [
 
 function CreateLeadFormPage() {
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   // Load products to populate dropdowns
   const { data: productsData } = useQuery({
@@ -91,14 +93,44 @@ function CreateLeadFormPage() {
   const handleSave = async () => {
     setIsSubmitting(true);
     try {
-      // In a real scenario, you'd send ALL these fields to the API.
-      // Currently our mock API just expects these:
       await apiActions.leadForms.create({
         title: name,
+        description: "",
         productId,
+        sourceMediaBuyerId: user?._id || user?.id,
+        defaultSource: "FACEBOOK",
         primaryColor: buttonColor,
         submitButtonText: submitLabel,
-        defaultSource: "FACEBOOK",
+        successMessage: "Order received!",
+        showQuantityField: false,
+        showAddressField: true,
+        branch,
+        priorityStates: priorityStates ? priorityStates.split(',').map(s => s.trim()) : [],
+        headline,
+        subHeadline,
+        preSubmitText,
+        postSubmitText,
+        footerText,
+        thankYouUrl,
+        customFields: fields,
+        showPhoneCode,
+        showWhatsappCode,
+        bumpProduct,
+        bumpHeader,
+        bumpBenefit,
+        bumpScarcity,
+        bumpCheckbox,
+        bumpBg,
+        bumpTextCol,
+        upsellProduct,
+        upsellUrl,
+        upsellBtnText,
+        upsellDecline,
+        upsellScarcity,
+        commitmentFee: Number(commitmentFee),
+        invoiceFooter,
+        receiptFooter,
+        notifyEmails: notifyEmails ? notifyEmails.split(',').map(e => e.trim()) : [],
       });
       toast.success("Form saved successfully");
       navigate({ to: "/lead-forms" });
