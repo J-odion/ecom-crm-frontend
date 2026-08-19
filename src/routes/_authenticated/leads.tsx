@@ -1,5 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { CallButton, WhatsAppButton } from "@/components/contact-buttons";
+import { toast } from "sonner";
 import { apiActions } from "@/lib/api";
 import { PageHeader } from "@/components/page-header";
 import { Card, CardContent } from "@/components/ui/card";
@@ -25,6 +27,13 @@ import {
   DropdownMenuCheckboxItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 
 import { useAuth } from "@/lib/auth";
@@ -37,7 +46,9 @@ export const Route = createFileRoute("/_authenticated/leads")({
 
 function LeadsPage() {
   const { user } = useAuth();
+  const qc = useQueryClient();
   const [search, setSearch] = useState("");
+  const [selectedLead, setSelectedLead] = useState<any | null>(null);
 
   if (user?.role === "sales_agent" || user?.role === "media_buyer") {
     return <UnauthorizedView />;
@@ -59,7 +70,43 @@ function LeadsPage() {
       ).data,
   });
 
+
   const leads: any[] = Array.isArray(data) ? data : data?.data || [];
+
+  const archive = useMutation({
+    mutationFn: async (id: string) => (await apiActions.leads.updateStatus(id, "CANCELLED")).data,
+    onSuccess: () => {
+      toast.success("Lead archived");
+      qc.invalidateQueries({ queryKey: ["leads"] });
+      setSelectedLead(null);
+    },
+    onError: (e: any) => toast.error(e.friendlyMessage || "Failed to archive"),
+  });
+
+  const confirm = useMutation({
+    mutationFn: async (lead: any) =>
+      (
+        await apiActions.orders.create({
+          leadId: lead._id || lead.id,
+          customerName: lead.customerName || lead.name,
+          phone: lead.phone,
+          product: lead.productName || lead.product,
+          productName: lead.productName || lead.product,
+          quantity: 1,
+          address: lead.address || lead.deliveryAddress || "",
+          deliveryType: "in_house",
+          status: "scheduled",
+          notes: "Confirmed from leads quick view",
+        })
+      ).data,
+    onSuccess: () => {
+      toast.success("Lead confirmed and moved to orders");
+      qc.invalidateQueries({ queryKey: ["leads"] });
+      qc.invalidateQueries({ queryKey: ["orders"] });
+      setSelectedLead(null);
+    },
+    onError: (e: any) => toast.error(e.friendlyMessage || "Failed to confirm lead"),
+  });
 
   const filteredLeads = leads.filter((l) => {
     const matchesSearch =
@@ -186,10 +233,8 @@ function LeadsPage() {
                           </div>
                         </td>
                         <td className="px-4 py-4 text-right">
-                          <Button asChild size="sm" variant="ghost">
-                            <Link to="/leads/$id" params={{ id: String(id) }}>
-                              View
-                            </Link>
+                          <Button size="sm" variant="ghost" onClick={() => setSelectedLead(l)}>
+                            View
                           </Button>
                         </td>
                       </tr>
@@ -201,6 +246,54 @@ function LeadsPage() {
           )}
         </CardContent>
       </Card>
+
+      <Dialog open={!!selectedLead} onOpenChange={(open) => !open && setSelectedLead(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Lead Actions</DialogTitle>
+          </DialogHeader>
+          {selectedLead && (
+            <div className="space-y-4 py-4">
+              <div className="grid gap-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="font-semibold text-muted-foreground">Name:</span>
+                  <span className="font-medium">{selectedLead.customerName || selectedLead.name || "—"}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="font-semibold text-muted-foreground">Phone:</span>
+                  <span className="font-medium">{selectedLead.phone || "—"}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="font-semibold text-muted-foreground">Product:</span>
+                  <span className="font-medium">{selectedLead.productName || selectedLead.product || "—"}</span>
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-2 pt-4 border-t border-border/50">
+                <CallButton phone={selectedLead.phone} />
+                <WhatsAppButton phone={selectedLead.phone} />
+              </div>
+            </div>
+          )}
+          <DialogFooter className="gap-2 sm:gap-0 border-t border-border/50 pt-4">
+            <Button
+              variant="outline"
+              className="text-destructive hover:bg-destructive/10 hover:text-destructive sm:mr-auto"
+              onClick={() => archive.mutate(selectedLead?._id || selectedLead?.id)}
+              disabled={archive.isPending}
+            >
+              {archive.isPending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+              Archive
+            </Button>
+            <Button
+              onClick={() => confirm.mutate(selectedLead)}
+              disabled={confirm.isPending}
+            >
+              {confirm.isPending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+              Confirm to Order
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

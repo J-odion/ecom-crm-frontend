@@ -55,7 +55,12 @@ const NAV: { group: string; items: NavItem[] }[] = [
         icon: ClipboardList,
         roles: ["customer_service", "admin", "dev", "customer_service_manager", "logistics_manager", "marketing_manager"],
       },
-      { to: "/lead-forms", label: "Lead Forms", icon: Code2, roles: "all" },
+      {
+        to: "/lead-forms",
+        label: "Lead Forms",
+        icon: Code2,
+        roles: ["admin", "dev", "customer_service_manager", "marketing_manager"],
+      },
       {
         to: "/orders",
         label: "Orders",
@@ -79,7 +84,12 @@ const NAV: { group: string; items: NavItem[] }[] = [
         icon: Truck,
         roles: ["logistics", "logistics_manager", "delivery_agent", "admin", "dev"],
       },
-      { to: "/inventory", label: "Inventory", icon: Boxes, roles: ["admin", "dev", "logistics", "logistics_manager"] },
+      {
+        to: "/inventory",
+        label: "Inventory",
+        icon: Boxes,
+        roles: ["admin", "dev", "logistics", "logistics_manager", "accountant"],
+      },
       { to: "/products", label: "Products", icon: Package, roles: "all" },
       { to: "/locations", label: "Locations", icon: MapPin, roles: ["admin", "dev", "logistics", "logistics_manager"] },
     ],

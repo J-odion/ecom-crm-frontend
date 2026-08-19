@@ -35,6 +35,8 @@ import {
 import { toast } from "sonner";
 import { RoleGate } from "@/components/role-gate";
 import { EmptyState } from "@/components/empty-state";
+import { useAuth } from "@/lib/auth";
+import { UnauthorizedView } from "@/components/unauthorized-view";
 
 export const Route = createFileRoute("/_authenticated/lead-forms")({
   head: () => ({ meta: [{ title: "Lead Forms — Ecom CRM" }] }),
@@ -42,7 +44,17 @@ export const Route = createFileRoute("/_authenticated/lead-forms")({
 });
 
 function LeadFormsPage() {
+  const { user } = useAuth();
   const qc = useQueryClient();
+
+  if (
+    user?.role === "customer_service" ||
+    user?.role === "sales_agent" ||
+    user?.role === "media_buyer"
+  ) {
+    return <UnauthorizedView />;
+  }
+
   const { data, isLoading } = useQuery({
     queryKey: ["lead-forms"],
     queryFn: async () => (await apiActions.leadForms.list()).data,
