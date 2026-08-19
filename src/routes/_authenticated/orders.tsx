@@ -39,6 +39,7 @@ export const Route = createFileRoute("/_authenticated/orders")({
 
 const STATUS_TABS = [
   "pending",
+  "abandoned",
   "scheduled",
   "delivered",
   "cancelled",
@@ -87,28 +88,32 @@ function OrdersPage() {
   const [statusReasonItem, setStatusReasonItem] = useState<{ item: any, status: string, isLead: boolean } | null>(null);
   const [statusReason, setStatusReason] = useState("");
 
-  const isPendingTab = activeTab === "pending";
+  const isLeadTab = activeTab === "pending" || activeTab === "abandoned";
 
   const { data: pendingData, isLoading: loadingPending } = useQuery({
     queryKey: ["leads"],
     queryFn: async () => (await apiActions.leads.list()).data,
-    enabled: isPendingTab,
+    enabled: isLeadTab,
   });
 
   const { data: ordersData, isLoading: loadingOrders } = useQuery({
     queryKey: ["orders"],
     queryFn: async () => (await api.get("/orders")).data,
-    enabled: !isPendingTab,
+    enabled: !isLeadTab,
   });
 
-  const isLoading = isPendingTab ? loadingPending : loadingOrders;
-  const rawData = isPendingTab 
+  const isLoading = isLeadTab ? loadingPending : loadingOrders;
+  const rawData = isLeadTab 
     ? (Array.isArray(pendingData) ? pendingData : pendingData?.data || [])
     : (Array.isArray(ordersData) ? ordersData : ordersData?.data || []);
 
-  // For pending tab we show leads. For other tabs we filter orders by status
-  let currentData = isPendingTab 
-    ? rawData 
+  // For lead tabs we filter leads by status. For other tabs we filter orders by status
+  let currentData = isLeadTab 
+    ? rawData.filter((o: any) => {
+        const s = (o.status || "pending").toLowerCase();
+        if (activeTab === "abandoned") return s === "abandoned";
+        return s !== "abandoned"; 
+      })
     : rawData.filter((o: any) => (o.status || o.deliveryStatus)?.toLowerCase() === activeTab);
 
   if (activeTab === "scheduled") {
@@ -245,7 +250,7 @@ function OrdersPage() {
                     <th className="px-4 py-3 text-left">ID / Ref</th>
                     <th className="px-4 py-3 text-left">Customer</th>
                     <th className="px-4 py-3 text-left">Product</th>
-                    {!isPendingTab && <th className="px-4 py-3 text-left">Amount</th>}
+                    {!isLeadTab && <th className="px-4 py-3 text-left">Amount</th>}
                     <th className="px-4 py-3 text-left">Status</th>
                     <th className="px-4 py-3 text-right">Actions</th>
                   </tr>
@@ -254,7 +259,7 @@ function OrdersPage() {
                   {filtered.map((o: any, i: number) => {
                     const id = o._id || o.id || i;
                     const custName = o.customerName || o.name || "—";
-                    const isLead = isPendingTab;
+                    const isLead = isLeadTab;
 
                     return (
                       <tr key={id} className="border-b border-border/60 hover:bg-muted/30">
@@ -268,7 +273,7 @@ function OrdersPage() {
                           </div>
                         </td>
                         <td className="px-4 py-3">{o.product || o.productName || "—"}</td>
-                        {!isPendingTab && (
+                        {!isLeadTab && (
                           <td className="px-4 py-3">{o.amount ? `₦${Number(o.amount).toLocaleString()}` : "—"}</td>
                         )}
                         <td className="px-4 py-3">
@@ -532,7 +537,7 @@ function OrdersPage() {
                 updateStatus.mutate({ 
                   id: String(deliveredItem._id || deliveredItem.id), 
                   status: "delivered", 
-                  isLead: isPendingTab,
+                  isLead: isLeadTab,
                   payload: { ...deliveredData, amountPaid: Number(deliveredData.amountPaid), deliveryFee: Number(deliveredData.deliveryFee) }
                 });
                 setDeliveredItem(null);
