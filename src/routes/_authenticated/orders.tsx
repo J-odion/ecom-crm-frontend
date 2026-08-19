@@ -1,127 +1,279 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { api } from "@/lib/api";
+import { api, apiActions } from "@/lib/api";
 import { PageHeader } from "@/components/page-header";
 import { Card, CardContent } from "@/components/ui/card";
 import { StatusBadge } from "@/components/status-badge";
 import { EmptyState } from "@/components/empty-state";
-import { ShoppingCart, Loader2, MoreHorizontal } from "lucide-react";
+import { ShoppingCart, Loader2, MoreHorizontal, Copy, CheckCircle2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator
 } from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { useState } from "react";
-
 import { useAuth } from "@/lib/auth";
 import { UnauthorizedView } from "@/components/unauthorized-view";
+import { CallButton, WhatsAppButton } from "@/components/contact-buttons";
 
 export const Route = createFileRoute("/_authenticated/orders")({
-  head: () => ({ meta: [{ title: "Orders — Ecom CRM" }] }),
+  head: () => ({ meta: [{ title: "Orders Management — Ecom CRM" }] }),
   component: OrdersPage,
 });
+
+const STATUS_TABS = [
+  "pending",
+  "scheduled",
+  "delivered",
+  "cancelled",
+  "deleted",
+  "failed",
+  "banned"
+];
 
 function OrdersPage() {
   const { user } = useAuth();
   const qc = useQueryClient();
   const [q, setQ] = useState("");
+  const [activeTab, setActiveTab] = useState("pending");
 
-  const setDelivery = useMutation({
-    mutationFn: async ({ id, status }: { id: string; status: string }) =>
-      (await api.patch(`/orders/${id}/delivery-status`, { status })).data,
-    onSuccess: () => {
-      toast.success("Order delivery status updated");
-      qc.invalidateQueries({ queryKey: ["orders"] });
-    },
-    onError: (e: any) => toast.error(e.friendlyMessage || "Failed to update"),
+  // View Modal State
+  const [viewItem, setViewItem] = useState<any | null>(null);
+
+  // Comment Modal State
+  const [commentItem, setCommentItem] = useState<any | null>(null);
+  const [commentText, setCommentText] = useState("");
+
+  // Schedule Modal State
+  const [scheduleItem, setScheduleItem] = useState<any | null>(null);
+  const [scheduleData, setScheduleData] = useState({
+    address: "",
+    quantity: 1,
+    notes: ""
   });
 
-  const cancel = useMutation({
-    mutationFn: async (id: string) => (await api.patch(`/orders/${id}/cancel`, {})).data,
-    onSuccess: () => {
-      toast.success("Order cancelled");
+  const isPendingTab = activeTab === "pending";
+
+  const { data: pendingData, isLoading: loadingPending } = useQuery({
+    queryKey: ["leads"],
+    queryFn: async () => (await apiActions.leads.list()).data,
+    enabled: isPendingTab,
+  });
+
+  const { data: ordersData, isLoading: loadingOrders } = useQuery({
+    queryKey: ["orders"],
+    queryFn: async () => (await api.get("/orders")).data,
+    enabled: !isPendingTab,
+  });
+
+  const isLoading = isPendingTab ? loadingPending : loadingOrders;
+  const rawData = isPendingTab 
+    ? (Array.isArray(pendingData) ? pendingData : pendingData?.data || [])
+    : (Array.isArray(ordersData) ? ordersData : ordersData?.data || []);
+
+  // For pending tab we show leads. For other tabs we filter orders by status
+  const currentData = isPendingTab 
+    ? rawData 
+    : rawData.filter((o: any) => (o.status || o.deliveryStatus)?.toLowerCase() === activeTab);
+
+  const filtered = currentData.filter((o: any) =>
+    JSON.stringify(o).toLowerCase().includes(q.toLowerCase())
+  );
+
+  // --- Mutations ---
+  const updateStatus = useMutation({
+    mutationFn: async ({ id, status, isLead }: { id: string; status: string; isLead: boolean }) => {
+      if (isLead) {
+        return (await apiActions.leads.updateStatus(id, status)).data;
+      }
+      return (await api.patch(`/orders/${id}/delivery-status`, { status })).data;
+    },
+    onSuccess: (_, variables) => {
+      toast.success(`Marked as ${variables.status}`);
+      qc.invalidateQueries({ queryKey: ["leads"] });
       qc.invalidateQueries({ queryKey: ["orders"] });
     },
-    onError: (e: any) => toast.error(e.friendlyMessage || "Failed to cancel"),
+    onError: (e: any) => toast.error(e.friendlyMessage || "Failed to update status"),
   });
+
+  const addComment = useMutation({
+    mutationFn: async () => {
+      const id = commentItem._id || commentItem.id;
+      const isLead = isPendingTab || commentItem.customerName; // roughly
+      if (isLead) {
+        return (await apiActions.leads.updateStatus(id, commentItem.status || "contacted")).data;
+      } else {
+        return (await apiActions.orders.followUp(id, { notes: commentText })).data;
+      }
+    },
+    onSuccess: () => {
+      toast.success("Comment added");
+      setCommentItem(null);
+      setCommentText("");
+      qc.invalidateQueries({ queryKey: ["leads"] });
+      qc.invalidateQueries({ queryKey: ["orders"] });
+    },
+    onError: (e: any) => toast.error(e.friendlyMessage || "Failed to add comment"),
+  });
+
+  const scheduleOrder = useMutation({
+    mutationFn: async () => {
+      const leadId = scheduleItem._id || scheduleItem.id;
+      return (await apiActions.orders.create({
+        leadId,
+        customerName: scheduleItem.customerName || scheduleItem.name,
+        callNumber: scheduleItem.callNumber || scheduleItem.phone,
+        whatsappNumber: scheduleItem.whatsappNumber || scheduleItem.phone,
+        product: scheduleItem.productName || scheduleItem.product,
+        quantity: scheduleData.quantity,
+        address: scheduleData.address,
+        deliveryType: "in_house",
+        status: "scheduled",
+        notes: scheduleData.notes,
+      })).data;
+    },
+    onSuccess: () => {
+      toast.success("Order scheduled successfully");
+      setScheduleItem(null);
+      qc.invalidateQueries({ queryKey: ["leads"] });
+      qc.invalidateQueries({ queryKey: ["orders"] });
+    },
+    onError: (e: any) => toast.error(e.friendlyMessage || "Failed to schedule order"),
+  });
+
 
   if (user?.role === "sales_agent" || user?.role === "media_buyer") {
     return <UnauthorizedView />;
   }
-  const { data, isLoading } = useQuery({
-    queryKey: ["orders"],
-    queryFn: async () => (await api.get("/orders")).data,
-  });
-  const orders: any[] = Array.isArray(data) ? data : data?.data || [];
-  const filtered = orders.filter((o) =>
-    JSON.stringify(o).toLowerCase().includes(q.toLowerCase()),
-  );
+
+  const handleCopy = (text: string, label: string) => {
+    navigator.clipboard.writeText(text);
+    toast.success(`${label} copied to clipboard`, { icon: <CheckCircle2 className="h-4 w-4 text-emerald-500" />});
+  };
 
   return (
-    <div>
-      <PageHeader title="Orders" description="All orders across the system." />
-      <div className="mb-4 max-w-sm">
-        <Input placeholder="Search orders…" value={q} onChange={(e) => setQ(e.target.value)} />
+    <div className="space-y-4">
+      <PageHeader title="Orders & Leads" description="Unified view for managing leads and orders." />
+      
+      <div className="flex flex-col sm:flex-row justify-between gap-4">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full overflow-x-auto">
+          <TabsList className="w-max inline-flex">
+            {STATUS_TABS.map(tab => (
+              <TabsTrigger key={tab} value={tab} className="capitalize">
+                {tab}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </Tabs>
+
+        <div className="w-full sm:max-w-xs shrink-0">
+          <Input placeholder="Search name, phone, product..." value={q} onChange={(e) => setQ(e.target.value)} />
+        </div>
       </div>
+
       <Card>
         <CardContent className="p-0">
           {isLoading ? (
             <div className="flex items-center justify-center p-12 text-muted-foreground">
-              <Loader2 className="h-5 w-5 animate-spin mr-2" /> Loading orders…
+              <Loader2 className="h-5 w-5 animate-spin mr-2" /> Loading data…
             </div>
           ) : filtered.length === 0 ? (
-            <EmptyState icon={ShoppingCart} title="No orders" description="Orders will show up here once Customer Service schedules them." />
+            <EmptyState icon={ShoppingCart} title={`No ${activeTab} items`} description="Nothing to display here based on your filters." />
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead className="border-b border-border bg-muted/40 text-xs uppercase tracking-wider text-muted-foreground">
                   <tr>
-                    <th className="px-4 py-3 text-left">Order</th>
+                    <th className="px-4 py-3 text-left">ID / Ref</th>
                     <th className="px-4 py-3 text-left">Customer</th>
                     <th className="px-4 py-3 text-left">Product</th>
-                    <th className="px-4 py-3 text-left">Amount</th>
+                    {!isPendingTab && <th className="px-4 py-3 text-left">Amount</th>}
                     <th className="px-4 py-3 text-left">Status</th>
                     <th className="px-4 py-3 text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {filtered.map((o, i) => {
+                  {filtered.map((o: any, i: number) => {
                     const id = o._id || o.id || i;
+                    const custName = o.customerName || o.name || "—";
+                    const isLead = isPendingTab;
+
                     return (
                       <tr key={id} className="border-b border-border/60 hover:bg-muted/30">
-                        <td className="px-4 py-3 font-mono text-xs">
-                          <Link to="/orders/$id" params={{ id: String(id) }} className="text-primary hover:underline">
-                            #{String(id).slice(-6)}
-                          </Link>
+                        <td className="px-4 py-3 font-mono text-xs text-muted-foreground">
+                          #{String(id).slice(-6)}
                         </td>
-                        <td className="px-4 py-3">{o.customerName || o.customer_name || "—"}</td>
+                        <td className="px-4 py-3">
+                          <div className="flex flex-col">
+                            <span className="font-medium text-foreground">{custName}</span>
+                            <span className="text-[11px] text-muted-foreground">{o.callNumber || o.phone || "—"}</span>
+                          </div>
+                        </td>
                         <td className="px-4 py-3">{o.product || o.productName || "—"}</td>
-                        <td className="px-4 py-3">{o.amount ? `₦${Number(o.amount).toLocaleString()}` : "—"}</td>
-                        <td className="px-4 py-3"><StatusBadge status={o.status || o.deliveryStatus} /></td>
+                        {!isPendingTab && (
+                          <td className="px-4 py-3">{o.amount ? `₦${Number(o.amount).toLocaleString()}` : "—"}</td>
+                        )}
+                        <td className="px-4 py-3">
+                          <StatusBadge status={o.status || o.deliveryStatus || (isLead ? "pending" : "")} />
+                        </td>
                         <td className="px-4 py-3 text-right">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" className="h-8 w-8 p-0">
-                                <span className="sr-only">Open menu</span>
-                                <MoreHorizontal className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => setDelivery.mutate({ id: String(id), status: "pending" })}>
-                                Mark Pending
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => setDelivery.mutate({ id: String(id), status: "delivered" })}>
-                                Mark Delivered
-                              </DropdownMenuItem>
-                              <DropdownMenuItem className="text-destructive focus:bg-destructive focus:text-destructive-foreground" onClick={() => cancel.mutate(String(id))}>
-                                Cancel Order
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
+                          <div className="flex items-center justify-end gap-2">
+                            <Button size="sm" variant="outline" onClick={() => setViewItem(o)}>
+                              View
+                            </Button>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" className="h-8 w-8 p-0">
+                                  <span className="sr-only">Open menu</span>
+                                  <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end" className="w-40">
+                                <DropdownMenuItem onClick={() => setCommentItem(o)}>
+                                  Add Comment
+                                </DropdownMenuItem>
+                                {isLead && (
+                                  <DropdownMenuItem onClick={() => {
+                                    setScheduleData({ address: o.address || "", quantity: 1, notes: "" });
+                                    setScheduleItem(o);
+                                  }}>
+                                    Schedule Order
+                                  </DropdownMenuItem>
+                                )}
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem onClick={() => updateStatus.mutate({ id: String(id), status: "delivered", isLead })}>
+                                  Mark Delivered
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => updateStatus.mutate({ id: String(id), status: "failed", isLead })}>
+                                  Mark Failed
+                                </DropdownMenuItem>
+                                <DropdownMenuItem className="text-destructive focus:bg-destructive focus:text-destructive-foreground" onClick={() => updateStatus.mutate({ id: String(id), status: "cancelled", isLead })}>
+                                  Cancel
+                                </DropdownMenuItem>
+                                <DropdownMenuItem className="text-destructive focus:bg-destructive focus:text-destructive-foreground" onClick={() => updateStatus.mutate({ id: String(id), status: "banned", isLead })}>
+                                  Ban Customer
+                                </DropdownMenuItem>
+                                <DropdownMenuItem className="text-destructive focus:bg-destructive focus:text-destructive-foreground" onClick={() => updateStatus.mutate({ id: String(id), status: "deleted", isLead })}>
+                                  Delete
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
                         </td>
                       </tr>
                     );
@@ -132,6 +284,142 @@ function OrdersPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* VIEW MODAL */}
+      <Dialog open={!!viewItem} onOpenChange={(open) => !open && setViewItem(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Customer Details</DialogTitle>
+          </DialogHeader>
+          {viewItem && (
+            <div className="space-y-4 py-4">
+              <div className="grid gap-3 text-sm">
+                <div className="flex justify-between items-center bg-muted/30 p-2 rounded-md">
+                  <span className="font-semibold text-muted-foreground w-1/3">Name</span>
+                  <span className="font-medium text-right">{viewItem.customerName || viewItem.name || "—"}</span>
+                </div>
+
+                <div className="flex justify-between items-center bg-muted/30 p-2 rounded-md group">
+                  <span className="font-semibold text-muted-foreground w-1/3">Call Number</span>
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium">{viewItem.callNumber || viewItem.phone || "—"}</span>
+                    {(viewItem.callNumber || viewItem.phone) && (
+                      <Button size="icon" variant="ghost" className="h-6 w-6 opacity-50 group-hover:opacity-100" onClick={() => handleCopy(viewItem.callNumber || viewItem.phone, "Call Number")}>
+                        <Copy className="h-3 w-3" />
+                      </Button>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex justify-between items-center bg-muted/30 p-2 rounded-md group">
+                  <span className="font-semibold text-muted-foreground w-1/3">WhatsApp</span>
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium">{viewItem.whatsappNumber || viewItem.phone || "—"}</span>
+                    {(viewItem.whatsappNumber || viewItem.phone) && (
+                      <Button size="icon" variant="ghost" className="h-6 w-6 opacity-50 group-hover:opacity-100" onClick={() => handleCopy(viewItem.whatsappNumber || viewItem.phone, "WhatsApp Number")}>
+                        <Copy className="h-3 w-3" />
+                      </Button>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex justify-between items-center bg-muted/30 p-2 rounded-md group">
+                  <span className="font-semibold text-muted-foreground w-1/3">Address</span>
+                  <div className="flex items-center gap-2 text-right">
+                    <span className="font-medium text-right max-w-[200px] truncate" title={viewItem.address}>{viewItem.address || "—"}</span>
+                    {viewItem.address && (
+                      <Button size="icon" variant="ghost" className="h-6 w-6 opacity-50 group-hover:opacity-100" onClick={() => handleCopy(viewItem.address, "Address")}>
+                        <Copy className="h-3 w-3" />
+                      </Button>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex justify-between items-center bg-muted/30 p-2 rounded-md">
+                  <span className="font-semibold text-muted-foreground w-1/3">Product</span>
+                  <span className="font-medium text-right">{viewItem.product || viewItem.productName || "—"}</span>
+                </div>
+              </div>
+              
+              <div className="flex flex-wrap gap-2 pt-4 border-t border-border/50">
+                <CallButton phone={viewItem.callNumber || viewItem.phone} />
+                <WhatsAppButton phone={viewItem.whatsappNumber || viewItem.phone} />
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setViewItem(null)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* COMMENT MODAL */}
+      <Dialog open={!!commentItem} onOpenChange={(open) => !open && setCommentItem(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add Comment</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <Label>Comment / Note</Label>
+            <Textarea 
+              placeholder="Type your comment here..." 
+              value={commentText} 
+              onChange={(e) => setCommentText(e.target.value)}
+              className="min-h-[100px]"
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCommentItem(null)}>Cancel</Button>
+            <Button onClick={() => addComment.mutate()} disabled={!commentText.trim() || addComment.isPending}>
+              {addComment.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Save Comment
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* SCHEDULE MODAL */}
+      <Dialog open={!!scheduleItem} onOpenChange={(open) => !open && setScheduleItem(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Schedule Order</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-1.5">
+              <Label>Delivery Address</Label>
+              <Textarea 
+                value={scheduleData.address} 
+                onChange={(e) => setScheduleData({ ...scheduleData, address: e.target.value })}
+                placeholder="Full delivery address"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Quantity</Label>
+              <Input 
+                type="number" 
+                min={1} 
+                value={scheduleData.quantity} 
+                onChange={(e) => setScheduleData({ ...scheduleData, quantity: parseInt(e.target.value) || 1 })}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Additional Notes</Label>
+              <Input 
+                value={scheduleData.notes} 
+                onChange={(e) => setScheduleData({ ...scheduleData, notes: e.target.value })}
+                placeholder="e.g. Call before delivery"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setScheduleItem(null)}>Cancel</Button>
+            <Button onClick={() => scheduleOrder.mutate()} disabled={!scheduleData.address.trim() || scheduleOrder.isPending}>
+              {scheduleOrder.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Confirm & Schedule
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

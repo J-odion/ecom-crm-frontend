@@ -50,12 +50,6 @@ const NAV: { group: string; items: NavItem[] }[] = [
     group: "Sales",
     items: [
       {
-        to: "/leads",
-        label: "Leads",
-        icon: ClipboardList,
-        roles: ["customer_service", "admin", "dev", "customer_service_manager", "logistics_manager", "marketing_manager"],
-      },
-      {
         to: "/lead-forms",
         label: "Lead Forms",
         icon: Code2,

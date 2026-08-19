@@ -51,10 +51,10 @@ export function setupMockInterceptors(api: AxiosInstance) {
         ...config,
         adapter: async () => ({
           data: [
-            { id: "L1", customerName: "John Doe", product: "Wireless Earbuds", phone: "08012345678", status: "new", source: "Facebook Ads" },
-            { id: "L2", customerName: "Jane Smith", product: "Smart Watch", phone: "08087654321", status: "contacted", source: "Google Search" },
-            { id: "L3", customerName: "Michael Obi", product: "Wireless Earbuds", phone: "07011223344", status: "new", source: "Instagram" },
-            { id: "L4", customerName: "Sarah Ahmed", product: "Power Bank", phone: "09055667788", status: "failed", source: "Facebook Ads" },
+            { id: "L1", customerName: "John Doe", product: "Wireless Earbuds", callNumber: "08012345678", whatsappNumber: "08012345678", status: "new", source: "Facebook Ads" },
+            { id: "L2", customerName: "Jane Smith", product: "Smart Watch", callNumber: "08087654321", whatsappNumber: "08087654321", status: "contacted", source: "Google Search" },
+            { id: "L3", customerName: "Michael Obi", product: "Wireless Earbuds", callNumber: "07011223344", whatsappNumber: "07011223344", status: "new", source: "Instagram" },
+            { id: "L4", customerName: "Sarah Ahmed", product: "Power Bank", callNumber: "09055667788", whatsappNumber: "09055667788", status: "failed", source: "Facebook Ads" },
           ],
           status: 200,
           statusText: "OK",
@@ -68,7 +68,7 @@ export function setupMockInterceptors(api: AxiosInstance) {
       return {
         ...config,
         adapter: async () => ({
-          data: { id: "L1", customerName: "John Doe", product: "Wireless Earbuds", phone: "08012345678", status: "new", source: "Facebook Ads", email: "john@example.com" },
+          data: { id: "L1", customerName: "John Doe", product: "Wireless Earbuds", callNumber: "08012345678", whatsappNumber: "08012345678", status: "new", source: "Facebook Ads", email: "john@example.com" },
           status: 200,
           statusText: "OK",
           headers: {},
@@ -83,9 +83,9 @@ export function setupMockInterceptors(api: AxiosInstance) {
         ...config,
         adapter: async () => ({
           data: [
-            { id: "ORD101", customerName: "John Doe", product: "Wireless Earbuds", amount: 25000, status: "scheduled", delivery_type: "in_house", phone: "08012345678" },
-            { id: "ORD102", customerName: "Alice Wong", product: "Smart Watch", amount: 45000, status: "delivered", delivery_type: "third_party", phone: "08122334455", delivery_fee: 2500 },
-            { id: "ORD103", customerName: "Buba Gana", product: "Power Bank", amount: 15000, status: "cash_remitted", delivery_type: "in_house", phone: "09033445566", delivery_fee: 1500 },
+            { id: "ORD101", customerName: "John Doe", product: "Wireless Earbuds", amount: 25000, status: "scheduled", delivery_type: "in_house", callNumber: "08012345678", whatsappNumber: "08012345678" },
+            { id: "ORD102", customerName: "Alice Wong", product: "Smart Watch", amount: 45000, status: "delivered", delivery_type: "third_party", callNumber: "08122334455", whatsappNumber: "08122334455", delivery_fee: 2500 },
+            { id: "ORD103", customerName: "Buba Gana", product: "Power Bank", amount: 15000, status: "cash_remitted", delivery_type: "in_house", callNumber: "09033445566", whatsappNumber: "09033445566", delivery_fee: 1500 },
           ],
           status: 200,
           statusText: "OK",
@@ -107,7 +107,8 @@ export function setupMockInterceptors(api: AxiosInstance) {
             amount: 25000, 
             status: "scheduled", 
             delivery_type: "in_house", 
-            phone: "08012345678",
+            callNumber: "08012345678",
+            whatsappNumber: "08012345678",
             address: "123 Ecom Street, Lagos",
             quantity: 1,
             notes: "Please call before delivery"
