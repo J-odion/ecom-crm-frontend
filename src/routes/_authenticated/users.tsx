@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/select";
 import { useState } from "react";
 import { toast } from "sonner";
-import { Loader2, UserPlus, Shield, MapPin, Trash2, Mail, Laptop, BarChart2 } from "lucide-react";
+import { Loader2, UserPlus, Shield, MapPin, Trash2, Mail, Laptop, BarChart2, Key } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -64,6 +64,7 @@ function UsersPage() {
 
   const [dashboardUser, setDashboardUser] = useState<any | null>(null);
   const [deviceUser, setDeviceUser] = useState<any | null>(null);
+  const [accessUser, setAccessUser] = useState<any | null>(null);
 
   return (
     <div className="space-y-6">
@@ -120,6 +121,7 @@ function UsersPage() {
                       onUpdate={() => qc.invalidateQueries({ queryKey: ["users"] })}
                       onOpenDashboard={() => setDashboardUser(u)}
                       onOpenDevice={() => setDeviceUser(u)}
+                      onOpenAccess={() => setAccessUser(u)}
                     />
                   ))}
                 </tbody>
@@ -135,11 +137,12 @@ function UsersPage() {
         onClose={() => setDeviceUser(null)} 
         onDone={() => qc.invalidateQueries({ queryKey: ["users"] })} 
       />
+      <UserAccessDialog user={accessUser} onClose={() => setAccessUser(null)} />
     </div>
   );
 }
 
-function UserRow({ user, locations, onUpdate, onOpenDashboard, onOpenDevice }: { user: any; locations: any[]; onUpdate: () => void; onOpenDashboard: () => void; onOpenDevice: () => void; }) {
+function UserRow({ user, locations, onUpdate, onOpenDashboard, onOpenDevice, onOpenAccess }: { user: any; locations: any[]; onUpdate: () => void; onOpenDashboard: () => void; onOpenDevice: () => void; onOpenAccess: () => void; }) {
   const [isEditing, setIsEditing] = useState(false);
   const [role, setRole] = useState<Role>(user.role);
   const [locationId, setLocationId] = useState<string>(user.locationId || "none");
@@ -352,6 +355,9 @@ function UserRow({ user, locations, onUpdate, onOpenDashboard, onOpenDevice }: {
             </Button>
             <Button size="sm" variant="outline" className="text-xs px-2" title="Assign Device" onClick={onOpenDevice}>
               <Laptop className="h-3 w-3" />
+            </Button>
+            <Button size="sm" variant="outline" className="text-xs px-2" title="Manage Access" onClick={onOpenAccess}>
+              <Key className="h-4 w-4 text-amber-500" />
             </Button>
             <Button size="sm" variant="outline" onClick={() => setIsEditing(true)}>Edit</Button>
             <Button
@@ -687,6 +693,196 @@ export function UserDashboardDialog({ user, onClose }: { user: any; onClose: () 
             </div>
           )}
         </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+export function UserAccessDialog({ user, onClose }: { user: any; onClose: () => void }) {
+  const isOpen = !!user;
+  const qc = useQueryClient();
+  const userId = user?.id || user?._id;
+
+  const { data: accessData, isLoading: accessLoading } = useQuery({
+    queryKey: ["userAccess", userId],
+    queryFn: async () => (await apiActions.accessControl.getUserAccess(userId)).data,
+    enabled: isOpen,
+  });
+
+  const { data: departmentsData } = useQuery({
+    queryKey: ["departments"],
+    queryFn: async () => (await apiActions.accessControl.getDepartments()).data,
+    enabled: isOpen,
+  });
+
+  const { data: rolesData } = useQuery({
+    queryKey: ["roles"],
+    queryFn: async () => (await apiActions.accessControl.getRoles()).data,
+    enabled: isOpen,
+  });
+
+  const access = accessData?.data || accessData;
+  const departments = departmentsData?.data || departmentsData || [];
+  const roles = rolesData?.data || rolesData || [];
+
+  const updateDept = useMutation({
+    mutationFn: (deptId: string | null) => apiActions.accessControl.assignDepartment(userId, deptId),
+    onSuccess: () => {
+      toast.success("Department updated");
+      qc.invalidateQueries({ queryKey: ["userAccess", userId] });
+    },
+    onError: (e: any) => toast.error(e.friendlyMessage || "Failed to update department"),
+  });
+
+  const updateRole = useMutation({
+    mutationFn: (roleId: string | null) => apiActions.accessControl.assignRole(userId, roleId),
+    onSuccess: () => {
+      toast.success("Role updated");
+      qc.invalidateQueries({ queryKey: ["userAccess", userId] });
+    },
+    onError: (e: any) => toast.error(e.friendlyMessage || "Failed to update role"),
+  });
+
+  const toggleOverride = useMutation({
+    mutationFn: ({ key, granted }: { key: string; granted: boolean }) => 
+      apiActions.accessControl.toggleOverride(userId, key, granted, "Manual toggle by admin"),
+    onSuccess: () => {
+      toast.success("Override added");
+      qc.invalidateQueries({ queryKey: ["userAccess", userId] });
+    },
+    onError: (e: any) => toast.error(e.friendlyMessage || "Failed to add override"),
+  });
+
+  const removeOverride = useMutation({
+    mutationFn: (key: string) => apiActions.accessControl.removeOverride(userId, key),
+    onSuccess: () => {
+      toast.success("Override removed");
+      qc.invalidateQueries({ queryKey: ["userAccess", userId] });
+    },
+    onError: (e: any) => toast.error(e.friendlyMessage || "Failed to remove override"),
+  });
+
+  return (
+    <Dialog open={isOpen} onOpenChange={(val) => !val && onClose()}>
+      <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Access Control & Privileges - {user?.fullName || user?.email}</DialogTitle>
+        </DialogHeader>
+        
+        {accessLoading ? (
+          <div className="flex h-32 items-center justify-center text-muted-foreground">
+            <Loader2 className="h-6 w-6 animate-spin mr-2" />
+            Loading access map...
+          </div>
+        ) : (
+          <div className="space-y-6 py-4">
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Department</Label>
+                <Select 
+                  value={access?.department?._id || access?.department?.id || "none"} 
+                  onValueChange={(val) => updateDept.mutate(val === "none" ? null : val)}
+                >
+                  <SelectTrigger><SelectValue placeholder="Select Department" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">No Department</SelectItem>
+                    {departments.map((d: any) => (
+                      <SelectItem key={d._id || d.id} value={d._id || d.id}>{d.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {access?.department && (
+                  <p className="text-[10px] text-muted-foreground mt-1">
+                    Inherited: {access.department.defaultPermissions?.length || 0} permissions
+                  </p>
+                )}
+              </div>
+              
+              <div className="space-y-2">
+                <Label>Role (within Dept)</Label>
+                <Select 
+                  value={access?.role?._id || access?.role?.id || "none"} 
+                  onValueChange={(val) => updateRole.mutate(val === "none" ? null : val)}
+                >
+                  <SelectTrigger><SelectValue placeholder="Select Role" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">No Role</SelectItem>
+                    {roles.map((r: any) => (
+                      <SelectItem key={r._id || r.id} value={r._id || r.id}>{r.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {access?.role && (
+                  <p className="text-[10px] text-muted-foreground mt-1">
+                    Inherited: {access.role.permissions?.length || 0} permissions
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <div className="border-t border-border/50 pt-4">
+              <h3 className="text-sm font-semibold mb-3">Explicit User Overrides</h3>
+              <p className="text-xs text-muted-foreground mb-4">Overrides can explicitly grant or revoke specific permissions, taking precedence over department and role defaults.</p>
+              
+              {access?.overrides?.length > 0 ? (
+                <div className="space-y-2 mb-4">
+                  {access.overrides.map((override: any) => (
+                    <div key={override.permissionKey} className="flex items-center justify-between p-2 rounded-md border border-border/50 bg-muted/20">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className={`text-[10px] uppercase font-bold px-1.5 py-0.5 rounded ${override.granted ? 'bg-emerald-500/10 text-emerald-600' : 'bg-red-500/10 text-red-600'}`}>
+                            {override.granted ? 'GRANTED' : 'REVOKED'}
+                          </span>
+                          <span className="text-sm font-mono">{override.permissionKey}</span>
+                        </div>
+                        {override.reason && <p className="text-[10px] text-muted-foreground mt-0.5">{override.reason}</p>}
+                      </div>
+                      <Button size="icon" variant="ghost" className="h-6 w-6 text-muted-foreground hover:text-destructive" onClick={() => removeOverride.mutate(override.permissionKey)}>
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-xs text-muted-foreground italic mb-4">No explicit overrides applied to this user.</div>
+              )}
+
+              <div className="flex items-center gap-2 mt-2 border p-3 rounded-lg border-dashed">
+                <Input id="newPermKey" placeholder="e.g. accounting:read" className="h-8 text-xs" />
+                <Button size="sm" variant="outline" className="h-8 text-xs text-emerald-600 border-emerald-500/20 bg-emerald-500/5 hover:bg-emerald-500/10" onClick={() => {
+                  const el = document.getElementById("newPermKey") as HTMLInputElement;
+                  if (el && el.value) {
+                    toggleOverride.mutate({ key: el.value, granted: true });
+                    el.value = "";
+                  }
+                }}>Grant</Button>
+                <Button size="sm" variant="outline" className="h-8 text-xs text-red-600 border-red-500/20 bg-red-500/5 hover:bg-red-500/10" onClick={() => {
+                  const el = document.getElementById("newPermKey") as HTMLInputElement;
+                  if (el && el.value) {
+                    toggleOverride.mutate({ key: el.value, granted: false });
+                    el.value = "";
+                  }
+                }}>Revoke</Button>
+              </div>
+            </div>
+
+            <div className="border-t border-border/50 pt-4">
+              <h3 className="text-sm font-semibold mb-2">Effective Permissions (Calculated)</h3>
+              <div className="flex flex-wrap gap-1.5">
+                {access?.resolvedPermissions?.map((perm: string) => (
+                  <span key={perm} className="inline-flex px-2 py-1 bg-primary/10 text-primary text-[10px] font-mono rounded border border-primary/20">
+                    {perm}
+                  </span>
+                ))}
+                {(!access?.resolvedPermissions || access.resolvedPermissions.length === 0) && (
+                  <span className="text-xs text-muted-foreground">No permissions</span>
+                )}
+              </div>
+            </div>
+            
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   );

@@ -60,7 +60,9 @@ function CreateLeadFormPage() {
   const [buttonColor, setButtonColor] = useState("#000000");
   const [textColor, setTextColor] = useState("#ffffff");
 
-  // 5. Phone Settings
+  // 5. Form Display Settings
+  const [showQuantityField, setShowQuantityField] = useState(false);
+  const [showAddressField, setShowAddressField] = useState(true);
   const [showPhoneCode, setShowPhoneCode] = useState(true);
   const [showWhatsappCode, setShowWhatsappCode] = useState(true);
 
@@ -102,8 +104,8 @@ function CreateLeadFormPage() {
         primaryColor: buttonColor,
         submitButtonText: submitLabel,
         successMessage: "Order received!",
-        showQuantityField: false,
-        showAddressField: true,
+        showQuantityField,
+        showAddressField,
         branch,
         priorityStates: priorityStates ? priorityStates.split(',').map(s => s.trim()) : [],
         headline,
@@ -115,14 +117,14 @@ function CreateLeadFormPage() {
         customFields: fields,
         showPhoneCode,
         showWhatsappCode,
-        bumpProduct,
+        bumpProduct: bumpProduct || null,
         bumpHeader,
         bumpBenefit,
         bumpScarcity,
         bumpCheckbox,
         bumpBg,
         bumpTextCol,
-        upsellProduct,
+        upsellProduct: upsellProduct || null,
         upsellUrl,
         upsellBtnText,
         upsellDecline,
@@ -318,10 +320,18 @@ function CreateLeadFormPage() {
           </CardContent>
         </Card>
 
-        {/* 5. Phone Settings */}
+        {/* 5. Form Display Settings */}
         <Card>
-          <CardHeader><CardTitle>5 · Phone settings</CardTitle></CardHeader>
+          <CardHeader><CardTitle>5 · Form Display Settings</CardTitle></CardHeader>
           <CardContent className="space-y-4">
+            <div className="flex items-center justify-between border-b border-border/50 pb-4">
+              <Label>Show Quantity Field</Label>
+              <Switch checked={showQuantityField} onCheckedChange={setShowQuantityField} />
+            </div>
+            <div className="flex items-center justify-between border-b border-border/50 pb-4">
+              <Label>Show Address Field</Label>
+              <Switch checked={showAddressField} onCheckedChange={setShowAddressField} />
+            </div>
             <div className="flex items-center justify-between border-b border-border/50 pb-4">
               <Label>Show country code dropdown before Phone field</Label>
               <Switch checked={showPhoneCode} onCheckedChange={setShowPhoneCode} />

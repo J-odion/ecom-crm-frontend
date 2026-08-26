@@ -572,8 +572,51 @@ export function setupMockInterceptors(api: AxiosInstance) {
       };
     }
 
-    // Default to success for patches/posts if not caught above
-    if (method === "post" || method === "patch" || method === "put") {
+    // --- Access Control ---
+    if (url === "/departments" && method === "get") {
+      return {
+        ...config,
+        adapter: async () => ({
+          data: [
+            { _id: "D1", name: "Finance", defaultPermissions: ["accounting:read"] },
+            { _id: "D2", name: "Customer Success", defaultPermissions: ["leads:read", "orders:read"] }
+          ],
+          status: 200, statusText: "OK", headers: {}, config
+        })
+      };
+    }
+    if (url === "/roles" && method === "get") {
+      return {
+        ...config,
+        adapter: async () => ({
+          data: [
+            { _id: "R1", name: "Senior Accountant", department: "D1", permissions: ["accounting:journal:post", "accounting:period:close"] },
+            { _id: "R2", name: "CS Agent", department: "D2", permissions: ["leads:update", "orders:follow-up"] }
+          ],
+          status: 200, statusText: "OK", headers: {}, config
+        })
+      };
+    }
+    if (url?.match(/\/users\/[A-Za-z0-9]+\/access$/i) && method === "get") {
+      return {
+        ...config,
+        adapter: async () => ({
+          data: {
+            department: { _id: "D2", name: "Customer Success", defaultPermissions: ["leads:read", "orders:read"] },
+            role: { _id: "R2", name: "CS Agent", permissions: ["leads:update", "orders:follow-up"] },
+            overrides: [
+              { permissionKey: "accounting:chart:manage", granted: false, reason: "Probationary period restriction" },
+              { permissionKey: "leads:delete", granted: true, reason: "Special admin request" }
+            ],
+            resolvedPermissions: ["leads:read", "orders:read", "leads:update", "orders:follow-up", "leads:delete"]
+          },
+          status: 200, statusText: "OK", headers: {}, config
+        })
+      };
+    }
+
+    // Default to success for patches/posts/deletes if not caught above
+    if (method === "post" || method === "patch" || method === "put" || method === "delete") {
       return {
         ...config,
         adapter: async () => ({

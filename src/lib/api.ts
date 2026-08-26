@@ -1,5 +1,4 @@
 import axios from "axios";
-import { setupMockInterceptors } from "./mock-api";
 
 export const API_BASE = import.meta.env.VITE_API_URL || "https://ecom-api-erg7.onrender.com";
 
@@ -19,10 +18,7 @@ function logError(error: any) {
   return meta.message;
 }
 
-// DEV MOCK: Enable mock data only if VITE_DEV_MOCK is set to "true" in .env
-if (import.meta.env.VITE_DEV_MOCK === "true") {
-  setupMockInterceptors(api);
-}
+// Mocks completely removed for production safety
 
 const TOKEN_KEY = "ecrm_token";
 const USER_KEY = "ecrm_user";
@@ -196,6 +192,15 @@ export const apiActions = {
     unlock: (id: string, d: any) => api.post(`/devices/${id}/unlock`, d),
     wipe: (id: string, d: any) => api.post(`/devices/${id}/wipe`, d),
     sync: () => api.post("/devices/sync"),
+  },
+  accessControl: {
+    getDepartments: () => api.get("/departments"),
+    getRoles: () => api.get("/roles"),
+    getUserAccess: (userId: string) => api.get(`/users/${userId}/access`),
+    assignDepartment: (userId: string, department: string | null) => api.patch(`/users/${userId}/access/department`, { department }),
+    assignRole: (userId: string, role: string | null) => api.patch(`/users/${userId}/access/role`, { role }),
+    toggleOverride: (userId: string, permissionKey: string, granted: boolean, reason?: string) => api.patch(`/users/${userId}/access/toggle`, { permissionKey, granted, reason }),
+    removeOverride: (userId: string, permissionKey: string) => api.delete(`/users/${userId}/access/override/${encodeURIComponent(permissionKey)}`),
   }
 };
 
