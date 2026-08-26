@@ -14,8 +14,8 @@ import { Button } from "@/components/ui/button";
 import { apiActions } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 
-export const Route = createFileRoute("/_authenticated/lead-forms/create")({
-  component: CreateLeadFormPage,
+export const Route = createFileRoute("/_authenticated/order-forms/create")({
+  component: CreateOrderFormPage,
 });
 
 const FIELD_DEFAULTS = [
@@ -28,7 +28,7 @@ const FIELD_DEFAULTS = [
   { id: "package", label: "Select your package", placeholder: "", required: true, showLabel: true },
 ];
 
-function CreateLeadFormPage() {
+function CreateOrderFormPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
 
@@ -95,7 +95,7 @@ function CreateLeadFormPage() {
   const handleSave = async () => {
     setIsSubmitting(true);
     try {
-      await apiActions.leadForms.create({
+      await apiActions.orderForms.create({
         title: name,
         description: "",
         productId,
@@ -135,7 +135,7 @@ function CreateLeadFormPage() {
         notifyEmails: notifyEmails ? notifyEmails.split(',').map(e => e.trim()) : [],
       });
       toast.success("Form saved successfully");
-      navigate({ to: "/lead-forms" });
+      navigate({ to: "/order-forms" });
     } catch (e: any) {
       toast.error(e.friendlyMessage || "Failed to save form");
     } finally {
@@ -147,7 +147,7 @@ function CreateLeadFormPage() {
     <div className="max-w-4xl mx-auto space-y-6 pb-24">
       <div className="flex items-center justify-between sticky top-0 z-10 bg-background/95 backdrop-blur py-4 border-b border-border">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => navigate({ to: "/lead-forms" })}>
+          <Button variant="ghost" size="icon" onClick={() => navigate({ to: "/order-forms" })}>
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div>

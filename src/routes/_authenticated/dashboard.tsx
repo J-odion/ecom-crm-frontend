@@ -22,6 +22,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { StatusBadge } from "@/components/status-badge";
 import { Link } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
+import { RefreshCw } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({ meta: [{ title: "Dashboard — Ecom CRM" }] }),
@@ -33,9 +34,10 @@ function Dashboard() {
   const currentRole = user?.role || "sales_agent";
 
   // Unified Dashboard Endpoint
-  const { data: meDashboardData, isLoading } = useQuery({
+  const { data: meDashboardData, isLoading, refetch, isRefetching } = useQuery({
     queryKey: ["analytics-me", currentRole],
     queryFn: async () => (await apiActions.analytics.me()).data,
+    refetchInterval: 600000, // 10 minutes silent auto-refresh
   });
 
   // Recent Orders for CS, Logistics, Admin
@@ -126,17 +128,29 @@ function Dashboard() {
 
           {/* ACTIVE STAFF ONLINE SECTION */}
           <Card className="mt-6">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-sm font-semibold">
-                <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                </span>
-                Active Staff Online
-              </CardTitle>
-              <CardDescription className="text-xs">
-                Real-time list of all staff members currently online.
-              </CardDescription>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <div>
+                <CardTitle className="flex items-center gap-2 text-sm font-semibold">
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                  </span>
+                  Active Staff Online
+                </CardTitle>
+                <CardDescription className="text-xs mt-1">
+                  Real-time list of all staff members currently online.
+                </CardDescription>
+              </div>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="h-8 text-xs" 
+                onClick={() => refetch()}
+                disabled={isRefetching}
+              >
+                <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${isRefetching ? 'animate-spin' : ''}`} />
+                Refresh
+              </Button>
             </CardHeader>
             <CardContent className="p-0">
               {(!data.onlineUsers || data.onlineUsers.length === 0) ? (
@@ -479,7 +493,7 @@ function Dashboard() {
                   <Link to="/media-buyer">Log Daily Spend</Link>
                 </Button>
                 <Button asChild variant="outline" className="text-xs">
-                  <Link to="/lead-forms">Get Iframe Embed Codes</Link>
+                  <Link to="/order-forms">Get Iframe Embed Codes</Link>
                 </Button>
               </div>
             </CardContent>

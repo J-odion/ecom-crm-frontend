@@ -38,24 +38,24 @@ import { EmptyState } from "@/components/empty-state";
 import { useAuth } from "@/lib/auth";
 import { UnauthorizedView } from "@/components/unauthorized-view";
 
-export const Route = createFileRoute("/_authenticated/lead-forms")({
-  head: () => ({ meta: [{ title: "Lead Forms — Ecom CRM" }] }),
-  component: LeadFormsPage,
+export const Route = createFileRoute("/_authenticated/order-forms")({
+  head: () => ({ meta: [{ title: "Order Forms — Ecom CRM" }] }),
+  component: orderFormsPage,
 });
 
-function LeadFormsPage() {
+function orderFormsPage() {
   const { user } = useAuth();
   const qc = useQueryClient();
   const matchRoute = useMatchRoute();
-  const isCreateRoute = matchRoute({ to: "/lead-forms/create" });
+  const isCreateRoute = matchRoute({ to: "/order-forms/create" });
 
   if (user?.role === "customer_service") {
     return <UnauthorizedView />;
   }
 
   const { data, isLoading } = useQuery({
-    queryKey: ["lead-forms"],
-    queryFn: async () => (await apiActions.leadForms.list()).data,
+    queryKey: ["order-forms"],
+    queryFn: async () => (await apiActions.orderForms.list()).data,
   });
 
   const forms: any[] = Array.isArray(data) ? data : data?.data || [];
@@ -67,12 +67,12 @@ function LeadFormsPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Lead Forms"
+        title="Order Forms"
         description="Create and manage embeddable forms for your landing pages."
         actions={
           <RoleGate allowedRoles={["admin", "dev", "media_buyer", "marketing_manager", "sales_agent", "customer_service_manager"]}>
             <Button asChild>
-              <Link to="/lead-forms/create">
+              <Link to="/order-forms/create">
                 <Plus className="h-4 w-4 mr-2" />
                 Create Form
               </Link>
@@ -109,14 +109,14 @@ function LeadFormsPage() {
 function FormCard({ form }: { form: any }) {
   const qc = useQueryClient();
   const [showCode, setShowCode] = useState(false);
-  const iframeUrl = apiActions.leadForms.getIframe(form.id || form._id);
+  const iframeUrl = apiActions.orderForms.getIframe(form.id || form._id);
   const iframeCode = `<iframe src="${iframeUrl}" width="100%" height="600" frameborder="0" style="border:none; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);"></iframe>`;
 
   const deleteMutation = useMutation({
-    mutationFn: () => apiActions.leadForms.delete(form.id || form._id),
+    mutationFn: () => apiActions.orderForms.delete(form.id || form._id),
     onSuccess: () => {
       toast.success("Form deleted");
-      qc.invalidateQueries({ queryKey: ["lead-forms"] });
+      qc.invalidateQueries({ queryKey: ["order-forms"] });
     },
     onError: (err: any) => toast.error(err.friendlyMessage || "Failed to delete"),
   });
