@@ -45,44 +45,13 @@ export function setupMockInterceptors(api: AxiosInstance) {
       return { ...config, adapter: async () => ({ data: { success: true }, status: 201, statusText: "Created", headers: {}, config }) };
     }
 
-    // --- Leads ---
-    if (url === "/leads" && method === "get") {
-      return {
-        ...config,
-        adapter: async () => ({
-          data: [
-            { id: "L1", customerName: "John Doe", product: "Wireless Earbuds", callNumber: "08012345678", whatsappNumber: "08012345678", status: "new", source: "Facebook Ads" },
-            { id: "L2", customerName: "Jane Smith", product: "Smart Watch", callNumber: "08087654321", whatsappNumber: "08087654321", status: "contacted", source: "Google Search" },
-            { id: "L3", customerName: "Michael Obi", product: "Wireless Earbuds", callNumber: "07011223344", whatsappNumber: "07011223344", status: "new", source: "Instagram" },
-            { id: "L4", customerName: "Sarah Ahmed", product: "Power Bank", callNumber: "09055667788", whatsappNumber: "09055667788", status: "failed", source: "Facebook Ads" },
-          ],
-          status: 200,
-          statusText: "OK",
-          headers: {},
-          config,
-        }),
-      };
-    }
-
-    if (url?.match(/\/leads\/[A-Z0-9]+/i) && method === "get") {
-      return {
-        ...config,
-        adapter: async () => ({
-          data: { id: "L1", customerName: "John Doe", product: "Wireless Earbuds", callNumber: "08012345678", whatsappNumber: "08012345678", status: "new", source: "Facebook Ads", email: "john@example.com" },
-          status: 200,
-          statusText: "OK",
-          headers: {},
-          config,
-        }),
-      };
-    }
-
     // --- Orders ---
     if (url === "/orders" && method === "get") {
       return {
         ...config,
         adapter: async () => ({
           data: [
+            { id: "ORD100", customerName: "Pending Customer", product: "Wireless Earbuds", amount: 25000, status: "pending", delivery_type: "in_house", callNumber: "08000000000", whatsappNumber: "08000000000" },
             { id: "ORD101", customerName: "John Doe", product: "Wireless Earbuds", amount: 25000, status: "scheduled", delivery_type: "in_house", callNumber: "08012345678", whatsappNumber: "08012345678", scheduleDate: new Date().toISOString() },
             { id: "ORD102", customerName: "Alice Wong", product: "Smart Watch", amount: 45000, status: "delivered", delivery_type: "third_party", callNumber: "08122334455", whatsappNumber: "08122334455", delivery_fee: 2500, scheduleDate: new Date(Date.now() - 86400000).toISOString() },
             { id: "ORD103", customerName: "Buba Gana", product: "Power Bank", amount: 15000, status: "cash_remitted", delivery_type: "in_house", callNumber: "09033445566", whatsappNumber: "09033445566", delivery_fee: 1500, scheduleDate: new Date(Date.now() - 172800000).toISOString() },
@@ -96,8 +65,8 @@ export function setupMockInterceptors(api: AxiosInstance) {
       };
     }
 
-    if (url?.match(/\/orders\/[A-Z0-9]+/i) && method === "get") {
-       const id = url.split("/").pop();
+    if (url?.match(/\/orders\/[A-Z0-9]+/i) && method === "get" && !url.includes("activity")) {
+       const id = url.split("/")[2];
        return {
         ...config,
         adapter: async () => ({
@@ -114,6 +83,23 @@ export function setupMockInterceptors(api: AxiosInstance) {
             quantity: 1,
             notes: "Please call before delivery"
           },
+          status: 200,
+          statusText: "OK",
+          headers: {},
+          config,
+        }),
+      };
+    }
+
+    if (url?.match(/\/orders\/[A-Z0-9]+\/activity/i) && method === "get") {
+      return {
+        ...config,
+        adapter: async () => ({
+          data: [
+            { category: "CREATED", action: "ORDER_CREATED", description: "Order created from Summer Promo form", actorName: "System", createdAt: new Date(Date.now() - 172800000).toISOString() },
+            { category: "VIEW", action: "ORDER_VIEWED", description: "Order detail opened by Jane Doe", actorName: "Jane Doe", createdAt: new Date(Date.now() - 86400000).toISOString() },
+            { category: "STATUS", action: "STATUS_CHANGED", description: "Order scheduled for delivery", actorName: "Admin", createdAt: new Date().toISOString() },
+          ],
           status: 200,
           statusText: "OK",
           headers: {},
@@ -266,8 +252,8 @@ export function setupMockInterceptors(api: AxiosInstance) {
       };
     }
 
-    // --- Lead Forms ---
-    if (url === "/lead-forms" && method === "get") {
+    // --- Order Forms ---
+    if (url === "/order-forms" && method === "get") {
       return {
         ...config,
         adapter: async () => ({
@@ -323,14 +309,14 @@ export function setupMockInterceptors(api: AxiosInstance) {
       };
     }
 
-    // --- Lead Forms Iframe Code ---
+    // --- Order Forms Iframe Code ---
     if (url?.includes("/iframe-code") && method === "get") {
       const id = url.split("/")[2];
       return {
         ...config,
         adapter: async () => ({
           data: {
-            iframeCode: `<iframe src="http://localhost:3000/lead-forms/${id}/embed" width="100%" height="600" style="border:none;"></iframe>`
+            iframeCode: `<iframe src="http://localhost:3000/order-forms/${id}/embed" width="100%" height="600" style="border:none;"></iframe>`
           },
           status: 200,
           statusText: "OK",

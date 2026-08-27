@@ -101,36 +101,22 @@ function OrdersPage() {
   });
 
   // Status Reason Modal State
-  const [statusReasonItem, setStatusReasonItem] = useState<{ item: any, status: string, isLead: boolean } | null>(null);
+  const [statusReasonItem, setStatusReasonItem] = useState<{ item: any, status: string } | null>(null);
   const [statusReason, setStatusReason] = useState("");
+
+  // Activity Timeline State
+  const [activityItem, setActivityItem] = useState<any | null>(null);
 
   const isLeadTab = activeTab === "pending" || activeTab === "abandoned";
 
-  const { data: pendingData, isLoading: loadingPending } = useQuery({
-    queryKey: ["leads"],
-    queryFn: async () => (await apiActions.leads.list()).data,
-    enabled: isLeadTab,
-  });
-
-  const { data: ordersData, isLoading: loadingOrders } = useQuery({
+  const { data: ordersData, isLoading } = useQuery({
     queryKey: ["orders"],
-    queryFn: async () => (await api.get("/orders")).data,
-    enabled: !isLeadTab,
+    queryFn: async () => (await apiActions.orders.list()).data,
   });
 
-  const isLoading = isLeadTab ? loadingPending : loadingOrders;
-  const rawData = isLeadTab 
-    ? (Array.isArray(pendingData) ? pendingData : pendingData?.data || [])
-    : (Array.isArray(ordersData) ? ordersData : ordersData?.data || []);
+  const rawData = Array.isArray(ordersData) ? ordersData : ordersData?.data || [];
 
-  // For lead tabs we filter leads by status. For other tabs we filter orders by status
-  let currentData = isLeadTab 
-    ? rawData.filter((o: any) => {
-        const s = (o.status || "pending").toLowerCase();
-        if (activeTab === "abandoned") return s === "abandoned";
-        return s !== "abandoned"; 
-      })
-    : rawData.filter((o: any) => (o.status || o.deliveryStatus)?.toLowerCase() === activeTab);
+  let currentData = rawData.filter((o: any) => (o.status || "pending").toLowerCase() === activeTab);
 
   if (activeTab === "scheduled") {
     currentData = currentData.filter((o: any) => {
@@ -175,15 +161,14 @@ function OrdersPage() {
 
   // --- Mutations ---
   const updateStatus = useMutation({
-    mutationFn: async ({ id, status, isLead, payload }: { id: string; status: string; isLead: boolean, payload?: any }) => {
-      if (isLead) {
-        return (await apiActions.leads.updateStatus(id, status)).data;
+    mutationFn: async ({ id, status, payload }: { id: string; status: string; payload?: any }) => {
+      if (status === "cash_remitted") {
+        return (await apiActions.orders.updatePayment(id, { status })).data;
       }
-      return (await api.patch(`/orders/${id}/delivery-status`, { status, ...payload })).data;
+      return (await apiActions.orders.updateDelivery(id, { status, ...payload })).data;
     },
     onSuccess: (_, variables) => {
       toast.success(`Marked as ${variables.status}`);
-      qc.invalidateQueries({ queryKey: ["leads"] });
       qc.invalidateQueries({ queryKey: ["orders"] });
     },
     onError: (e: any) => toast.error(e.friendlyMessage || "Failed to update status"),
@@ -192,18 +177,12 @@ function OrdersPage() {
   const addComment = useMutation({
     mutationFn: async () => {
       const id = commentItem._id || commentItem.id;
-      const isLead = isPendingTab || commentItem.customerName; // roughly
-      if (isLead) {
-        return (await apiActions.leads.updateStatus(id, commentItem.status || "contacted")).data;
-      } else {
-        return (await apiActions.orders.followUp(id, { notes: commentText })).data;
-      }
+      return (await apiActions.orders.followUp(id, { notes: commentText })).data;
     },
     onSuccess: () => {
       toast.success("Comment added");
       setCommentItem(null);
       setCommentText("");
-      qc.invalidateQueries({ queryKey: ["leads"] });
       qc.invalidateQueries({ queryKey: ["orders"] });
     },
     onError: (e: any) => toast.error(e.friendlyMessage || "Failed to add comment"),
@@ -211,17 +190,11 @@ function OrdersPage() {
 
   const scheduleOrder = useMutation({
     mutationFn: async () => {
-      const leadId = scheduleItem._id || scheduleItem.id;
-      return (await apiActions.orders.create({
-        leadId,
-        customerName: scheduleItem.customerName || scheduleItem.name,
-        callNumber: scheduleItem.callNumber || scheduleItem.phone,
-        whatsappNumber: scheduleItem.whatsappNumber || scheduleItem.phone,
-        product: scheduleItem.productName || scheduleItem.product,
-        quantity: scheduleData.quantity,
-        address: scheduleData.address,
-        deliveryType: "in_house",
+      const id = scheduleItem._id || scheduleItem.id;
+      return (await apiActions.orders.updateDelivery(id, {
         status: "scheduled",
+        address: scheduleData.address,
+        quantity: scheduleData.quantity,
         notes: scheduleData.notes,
         scheduleDate: new Date(scheduleData.scheduleDate).toISOString(),
       })).data;
@@ -229,7 +202,6 @@ function OrdersPage() {
     onSuccess: () => {
       toast.success("Order scheduled successfully");
       setScheduleItem(null);
-      qc.invalidateQueries({ queryKey: ["leads"] });
       qc.invalidateQueries({ queryKey: ["orders"] });
     },
     onError: (e: any) => toast.error(e.friendlyMessage || "Failed to schedule order"),
@@ -354,6 +326,9 @@ function OrdersPage() {
                               <Button size="sm" variant="outline" onClick={() => setViewItem(o)}>
                                 View
                               </Button>
+                              <Button size="sm" variant="ghost" onClick={() => setActivityItem(o)} title="View Activity Log">
+                                <CalendarIcon className="h-4 w-4" />
+                              </Button>
                               <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
                                   <Button variant="ghost" className="h-8 w-8 p-0">
@@ -367,7 +342,7 @@ function OrdersPage() {
                                   </DropdownMenuItem>
                                   {isLead && (
                                     <DropdownMenuItem onClick={() => {
-                                      setScheduleData({ address: o.address || "", quantity: 1, notes: "" });
+                                      setScheduleData({ address: o.address || "", quantity: 1, notes: "", scheduleDate: new Date().toISOString().split("T")[0] });
                                       setScheduleItem(o);
                                     }}>
                                       Schedule Order
@@ -380,16 +355,16 @@ function OrdersPage() {
                                   }}>
                                     Mark Delivered
                                   </DropdownMenuItem>
-                                  <DropdownMenuItem onClick={() => setStatusReasonItem({ item: o, status: "failed", isLead })}>
+                                  <DropdownMenuItem onClick={() => setStatusReasonItem({ item: o, status: "failed" })}>
                                     Mark Failed
                                   </DropdownMenuItem>
-                                  <DropdownMenuItem className="text-destructive focus:bg-destructive focus:text-destructive-foreground" onClick={() => setStatusReasonItem({ item: o, status: "cancelled", isLead })}>
+                                  <DropdownMenuItem className="text-destructive focus:bg-destructive focus:text-destructive-foreground" onClick={() => setStatusReasonItem({ item: o, status: "cancelled" })}>
                                     Cancel
                                   </DropdownMenuItem>
-                                  <DropdownMenuItem className="text-destructive focus:bg-destructive focus:text-destructive-foreground" onClick={() => setStatusReasonItem({ item: o, status: "banned", isLead })}>
+                                  <DropdownMenuItem className="text-destructive focus:bg-destructive focus:text-destructive-foreground" onClick={() => setStatusReasonItem({ item: o, status: "banned" })}>
                                     Ban Customer
                                   </DropdownMenuItem>
-                                  <DropdownMenuItem className="text-destructive focus:bg-destructive focus:text-destructive-foreground" onClick={() => setStatusReasonItem({ item: o, status: "deleted", isLead })}>
+                                  <DropdownMenuItem className="text-destructive focus:bg-destructive focus:text-destructive-foreground" onClick={() => setStatusReasonItem({ item: o, status: "deleted" })}>
                                     Delete
                                   </DropdownMenuItem>
                                 </DropdownMenuContent>
@@ -608,7 +583,6 @@ function OrdersPage() {
                 updateStatus.mutate({ 
                   id: String(deliveredItem._id || deliveredItem.id), 
                   status: "delivered", 
-                  isLead: isLeadTab,
                   payload: { ...deliveredData, amountPaid: Number(deliveredData.amountPaid), deliveryFee: Number(deliveredData.deliveryFee) }
                 });
                 setDeliveredItem(null);
@@ -646,7 +620,6 @@ function OrdersPage() {
                 updateStatus.mutate({ 
                   id: String(statusReasonItem.item._id || statusReasonItem.item.id), 
                   status: statusReasonItem.status, 
-                  isLead: statusReasonItem.isLead,
                   payload: { reason: statusReason }
                 });
                 setStatusReasonItem(null);
@@ -660,6 +633,61 @@ function OrdersPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      
+      <ActivityTimelineDialog item={activityItem} onClose={() => setActivityItem(null)} />
     </div>
+  );
+}
+
+function ActivityTimelineDialog({ item, onClose }: { item: any, onClose: () => void }) {
+  const isOpen = !!item;
+  const { data: activityData, isLoading } = useQuery({
+    queryKey: ["orderActivity", item?._id || item?.id],
+    queryFn: async () => (await apiActions.orders.getActivity(item?._id || item?.id)).data,
+    enabled: isOpen,
+  });
+
+  const activities = Array.isArray(activityData) ? activityData : activityData?.data || [];
+
+  return (
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Order Activity</DialogTitle>
+        </DialogHeader>
+        <div className="py-4">
+          {isLoading ? (
+            <div className="flex h-32 items-center justify-center text-muted-foreground">
+              <Loader2 className="h-6 w-6 animate-spin mr-2" />
+              Loading timeline...
+            </div>
+          ) : activities.length === 0 ? (
+            <div className="text-center text-sm text-muted-foreground p-4">No activity recorded for this order yet.</div>
+          ) : (
+            <div className="space-y-4">
+              {activities.map((act: any, i: number) => (
+                <div key={i} className="flex gap-3">
+                  <div className="flex flex-col items-center">
+                    <div className="h-2 w-2 rounded-full bg-primary mt-1.5" />
+                    {i !== activities.length - 1 && <div className="h-full w-px bg-border my-1" />}
+                  </div>
+                  <div className="flex flex-col pb-4">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-semibold">{act.action.replace(/_/g, " ")}</span>
+                      <span className="text-[10px] text-muted-foreground">{new Date(act.createdAt).toLocaleString()}</span>
+                    </div>
+                    <p className="text-sm text-muted-foreground">{act.description}</p>
+                    <span className="text-xs font-medium text-foreground mt-1">by {act.actorName || "System"}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>Close</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

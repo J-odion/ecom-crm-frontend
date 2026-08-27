@@ -2,11 +2,10 @@ import { CheckCircle2, Circle, Clock, Truck, Receipt, XCircle } from "lucide-rea
 import { cn } from "@/lib/utils";
 
 const STEPS = [
-  { id: "lead", label: "Lead", icon: Clock },
-  { id: "scheduled", label: "Scheduled", icon: CheckCircle2 },
-  { id: "out_for_delivery", label: "Out for Delivery", icon: Truck },
-  { id: "delivered", label: "Delivered", icon: Receipt },
-  { id: "cash_remitted", label: "Cash Remitted", icon: CheckCircle2 },
+  { id: "pending", label: "Pending", icon: Clock },
+  { id: "scheduled", label: "Scheduled", icon: Truck },
+  { id: "delivered", label: "Delivered", icon: CheckCircle2 },
+  { id: "cash_remitted", label: "Remitted", icon: Receipt },
 ];
 
 interface OrderStatusTimelineProps {
@@ -22,19 +21,16 @@ export function OrderStatusTimeline({ currentStatus, className }: OrderStatusTim
   
   // Map various status strings to our steps
   const statusMap: Record<string, number> = {
-    "lead": 0,
-    "new": 0,
+    "pending": 0,
+    "abandoned": 0,
     "scheduled": 1,
-    "assigned": 1,
-    "out_for_delivery": 2,
-    "shipped": 2,
-    "delivered": 3,
-    "completed": 4,
-    "cash_remitted": 4,
+    "delivered": 2,
+    "cash_remitted": 3,
+    "discrepancy": 3,
   };
 
   const currentIndex = statusMap[status] ?? -1;
-  const isFailed = /fail|cancel/i.test(status);
+  const isFailed = /fail|cancel|abandon|ban|delet|discrep/i.test(status);
 
   return (
     <div className={cn("relative flex w-full justify-between py-6", className)}>
