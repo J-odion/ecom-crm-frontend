@@ -37,7 +37,7 @@ function ProductsPage() {
             <Card key={p._id || p.id || i}>
               <CardContent className="p-5">
                 <h3 className="font-semibold text-foreground">{p.name || p.productName}</h3>
-                <p className="mt-0.5 text-xs text-muted-foreground">SKU: {p.sku || "—"}</p>
+
                 <div className="mt-4 grid grid-cols-3 gap-2 text-xs">
                   <Stat label="Stock" value={p.stock ?? p.quantity ?? "—"} />
                   <Stat label="Cost" value={p.cost ? `₦${Number(p.cost).toLocaleString()}` : "—"} />

@@ -601,6 +601,30 @@ export function setupMockInterceptors(api: AxiosInstance) {
       };
     }
 
+    if (url === "/permissions/grouped" && method === "get") {
+      return {
+        ...config,
+        adapter: async () => ({
+          data: {
+            Orders: [
+              { _id: "P1", key: "orders:read", name: "View Orders", description: "Can view all orders in the system" },
+              { _id: "P2", key: "orders:update", name: "Update Orders", description: "Can update order statuses" },
+              { _id: "P3", key: "orders:delete", name: "Delete Orders", description: "Can delete orders" }
+            ],
+            Finance: [
+              { _id: "P4", key: "finance:manage", name: "Manage Finance", description: "Full access to accounting" },
+              { _id: "P5", key: "finance:view", name: "View Finance", description: "Can view financial reports" }
+            ],
+            Administration: [
+              { _id: "P6", key: "users:manage", name: "Manage Users", description: "Can create and edit users" },
+              { _id: "P7", key: "settings:manage", name: "Manage Settings", description: "Can change system settings" }
+            ]
+          },
+          status: 200, statusText: "OK", headers: {}, config
+        })
+      };
+    }
+
     // Default to success for patches/posts/deletes if not caught above
     if (method === "post" || method === "patch" || method === "put" || method === "delete") {
       return {

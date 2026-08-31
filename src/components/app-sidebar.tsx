@@ -18,6 +18,7 @@ import {
   History,
   Laptop,
   BookOpen,
+  Key,
 } from "lucide-react";
 import {
   Sidebar,
@@ -51,8 +52,8 @@ const NAV: { group: string; items: NavItem[] }[] = [
     group: "Sales",
     items: [
       {
-        to: "/lead-forms",
-        label: "Lead Forms",
+        to: "/order-forms",
+        label: "Order Forms",
         icon: Code2,
         roles: ["admin", "dev", "customer_service_manager", "marketing_manager", "media_buyer", "sales_agent"],
       },
@@ -101,6 +102,7 @@ const NAV: { group: string; items: NavItem[] }[] = [
   {
     group: "Admin",
     items: [
+      { to: "/permissions", label: "Permissions", icon: Key, roles: ["admin", "dev"] },
       { to: "/users", label: "Users", icon: Users, roles: ["admin", "dev", "manager", "accountant"] },
       { to: "/audit-trail", label: "Audit Trail", icon: History, roles: ["admin", "dev"] },
       { to: "/devices", label: "Devices", icon: Laptop, roles: ["admin", "dev", "management"] },

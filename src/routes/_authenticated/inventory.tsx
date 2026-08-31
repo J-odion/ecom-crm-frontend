@@ -60,7 +60,6 @@ function InventoryPage() {
                 <thead className="border-b border-border bg-muted/40 text-xs uppercase tracking-wider text-muted-foreground">
                   <tr>
                     <th className="px-4 py-3 text-left">Product</th>
-                    <th className="px-4 py-3 text-left">SKU</th>
                     <th className="px-4 py-3 text-left">Stock</th>
                     <th className="px-4 py-3 text-left">Cost</th>
                     <th className="px-4 py-3 text-left">Price</th>
@@ -70,7 +69,6 @@ function InventoryPage() {
                   {items.map((p, i) => (
                     <tr key={p._id || p.id || i} className="border-b border-border/60 hover:bg-muted/30">
                       <td className="px-4 py-3 font-medium">{p.name || p.productName || "—"}</td>
-                      <td className="px-4 py-3 font-mono text-xs">{p.sku || "—"}</td>
                       <td className="px-4 py-3">{p.stock ?? p.quantity ?? "—"}</td>
                       <td className="px-4 py-3">{p.cost ? `₦${Number(p.cost).toLocaleString()}` : "—"}</td>
                       <td className="px-4 py-3">{p.price ? `₦${Number(p.price).toLocaleString()}` : "—"}</td>
@@ -96,13 +94,12 @@ export function NewProductDialog({
   triggerLabel?: string;
 }) {
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({ name: "", sku: "", stock: 0, cost: "", price: "", description: "" });
+  const [form, setForm] = useState({ name: "", stock: 0, cost: "", price: "", description: "" });
   const create = useMutation({
     mutationFn: async () =>
       (await api.post(endpoint, {
         name: form.name,
         productName: form.name,
-        sku: form.sku || undefined,
         stock: Number(form.stock) || 0,
         quantity: Number(form.stock) || 0,
         cost: form.cost ? Number(form.cost) : undefined,
@@ -112,7 +109,7 @@ export function NewProductDialog({
     onSuccess: () => {
       toast.success("Product created");
       setOpen(false);
-      setForm({ name: "", sku: "", stock: 0, cost: "", price: "", description: "" });
+      setForm({ name: "", stock: 0, cost: "", price: "", description: "" });
       onDone();
     },
     onError: (e: any) => toast.error(e.friendlyMessage || "Failed"),
@@ -127,7 +124,6 @@ export function NewProductDialog({
         <DialogHeader><DialogTitle>New product</DialogTitle></DialogHeader>
         <div className="grid gap-3 sm:grid-cols-2">
           <div className="sm:col-span-2"><Label className="mb-1.5 block">Name</Label><Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></div>
-          <div><Label className="mb-1.5 block">SKU</Label><Input value={form.sku} onChange={(e) => setForm({ ...form, sku: e.target.value })} /></div>
           <div><Label className="mb-1.5 block">Stock</Label><Input type="number" value={form.stock} onChange={(e) => setForm({ ...form, stock: Number(e.target.value) })} /></div>
           <div><Label className="mb-1.5 block">Cost (₦)</Label><Input type="number" value={form.cost} onChange={(e) => setForm({ ...form, cost: e.target.value })} /></div>
           <div><Label className="mb-1.5 block">Price (₦)</Label><Input type="number" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} /></div>

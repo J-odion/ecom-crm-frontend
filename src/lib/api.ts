@@ -205,6 +205,9 @@ export const apiActions = {
     assignRole: (userId: string, role: string | null) => api.patch(`/users/${userId}/access/role`, { role }),
     toggleOverride: (userId: string, permissionKey: string, granted: boolean, reason?: string) => api.patch(`/users/${userId}/access/toggle`, { permissionKey, granted, reason }),
     removeOverride: (userId: string, permissionKey: string) => api.delete(`/users/${userId}/access/override/${encodeURIComponent(permissionKey)}`),
+  },
+  permissions: {
+    getGrouped: () => api.get("/permissions/grouped"),
   }
 };
 
