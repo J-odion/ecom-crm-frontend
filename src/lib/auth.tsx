@@ -30,18 +30,34 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 function decodeUser(token: string, fallback: Partial<AuthUser> = {}): AuthUser {
   try {
     const decoded: any = jwtDecode(token);
+    const role = (decoded.role as Role) || (fallback.role as Role) || "sales_agent";
+    const permissions = decoded.permissions || fallback.permissions || [];
+    
+    // Fallback: Mirror the backend Access Resolver. 
+    // If they are an admin but their stored token doesn't have the wildcard yet, inject it.
+    if (role === "admin" && !permissions.includes("*")) {
+      permissions.push("*");
+    }
+
     return {
       id: decoded.sub || decoded.id || decoded._id,
       email: decoded.email || fallback.email || "",
-      role: (decoded.role as Role) || (fallback.role as Role) || "sales_agent",
-      permissions: decoded.permissions || fallback.permissions || [],
+      role,
+      permissions,
       ...decoded,
     };
   } catch {
+    const role = (fallback.role as Role) || "sales_agent";
+    const permissions = fallback.permissions || [];
+    
+    if (role === "admin" && !permissions.includes("*")) {
+      permissions.push("*");
+    }
+
     return {
       email: fallback.email || "",
-      role: (fallback.role as Role) || "sales_agent",
-      permissions: fallback.permissions || [],
+      role,
+      permissions,
       ...fallback,
     } as AuthUser;
   }
