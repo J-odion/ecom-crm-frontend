@@ -34,6 +34,7 @@ function DevicesPage() {
   const { user } = useAuth();
   const [q, setQ] = useState("");
   const [syncing, setSyncing] = useState(false);
+  const [viewItem, setViewItem] = useState<any | null>(null);
   const queryClient = useQueryClient();
 
   // Allow admin and management to see devices
@@ -98,9 +99,9 @@ function DevicesPage() {
                   <tr>
                     <th className="px-4 py-3 text-left">Name</th>
                     <th className="px-4 py-3 text-left">Type / OS</th>
-                    <th className="px-4 py-3 text-left">Serial Number</th>
                     <th className="px-4 py-3 text-left">Status</th>
                     <th className="px-4 py-3 text-left">Last Seen</th>
+                    <th className="px-4 py-3 text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -117,10 +118,12 @@ function DevicesPage() {
                         <td className="px-4 py-3">
                           {d.type} <span className="text-muted-foreground text-xs">({d.os || d.osVersion})</span>
                         </td>
-                        <td className="px-4 py-3 font-mono text-xs">{d.serialNumber || "—"}</td>
                         <td className="px-4 py-3"><StatusBadge status={d.status} /></td>
                         <td className="px-4 py-3 text-muted-foreground text-xs">
                           {d.lastSeenAt ? new Date(d.lastSeenAt).toLocaleString() : "Never"}
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          <Button size="sm" variant="outline" onClick={() => setViewItem(d)}>View</Button>
                         </td>
                       </tr>
                     );
@@ -131,6 +134,53 @@ function DevicesPage() {
           )}
         </CardContent>
       </Card>
+
+      <Dialog open={!!viewItem} onOpenChange={(open) => !open && setViewItem(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Device Details</DialogTitle>
+          </DialogHeader>
+          {viewItem && (
+            <div className="space-y-3 py-4 text-sm">
+              <div className="flex justify-between p-2 bg-muted/30 rounded">
+                <span className="text-muted-foreground font-semibold">Name</span>
+                <span className="font-medium">{viewItem.name || "Unknown"}</span>
+              </div>
+              <div className="flex justify-between p-2 bg-muted/30 rounded">
+                <span className="text-muted-foreground font-semibold">Type</span>
+                <span className="capitalize">{viewItem.type || "—"}</span>
+              </div>
+              <div className="flex justify-between p-2 bg-muted/30 rounded">
+                <span className="text-muted-foreground font-semibold">Model</span>
+                <span>{viewItem.model || "—"}</span>
+              </div>
+              <div className="flex justify-between p-2 bg-muted/30 rounded">
+                <span className="text-muted-foreground font-semibold">OS Version</span>
+                <span>{viewItem.os || viewItem.osVersion || "—"}</span>
+              </div>
+              <div className="flex justify-between p-2 bg-muted/30 rounded">
+                <span className="text-muted-foreground font-semibold">Serial Number</span>
+                <span className="font-mono text-xs">{viewItem.serialNumber || "—"}</span>
+              </div>
+              <div className="flex justify-between p-2 bg-muted/30 rounded">
+                <span className="text-muted-foreground font-semibold">Cost Price</span>
+                <span>{viewItem.costPrice ? `₦${Number(viewItem.costPrice).toLocaleString()}` : "—"}</span>
+              </div>
+              <div className="flex justify-between p-2 bg-muted/30 rounded">
+                <span className="text-muted-foreground font-semibold">Purchase Date</span>
+                <span>{viewItem.purchaseDate ? new Date(viewItem.purchaseDate).toLocaleDateString() : "—"}</span>
+              </div>
+              <div className="flex justify-between p-2 bg-muted/30 rounded">
+                <span className="text-muted-foreground font-semibold">Last Seen</span>
+                <span>{viewItem.lastSeenAt ? new Date(viewItem.lastSeenAt).toLocaleString() : "Never"}</span>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setViewItem(null)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

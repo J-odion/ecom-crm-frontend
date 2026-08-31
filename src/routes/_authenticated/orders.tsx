@@ -137,16 +137,26 @@ function OrdersPage() {
       const d = new Date(dateStr);
       const now = new Date();
       
-      if (dateFilter === "daily") {
-        return d.toDateString() === now.toDateString();
+      if (dateFilter === "this week") {
+        const weekStart = new Date(now.setDate(now.getDate() - now.getDay()));
+        weekStart.setHours(0, 0, 0, 0);
+        return d >= weekStart;
       }
-      if (dateFilter === "weekly") {
-        const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-        return d >= weekAgo;
+      if (dateFilter === "this month") {
+        const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+        return d >= monthStart;
       }
-      if (dateFilter === "monthly") {
-        const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-        return d >= monthAgo;
+      if (dateFilter === "last week") {
+        const lastWeekStart = new Date(now.setDate(now.getDate() - now.getDay() - 7));
+        const lastWeekEnd = new Date(lastWeekStart);
+        lastWeekEnd.setDate(lastWeekEnd.getDate() + 6);
+        lastWeekEnd.setHours(23, 59, 59, 999);
+        return d >= lastWeekStart && d <= lastWeekEnd;
+      }
+      if (dateFilter === "last month") {
+        const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
+        return d >= lastMonthStart && d <= lastMonthEnd;
       }
       if (dateFilter === "custom" && customDate) {
         return d.toISOString().startsWith(customDate);
@@ -243,9 +253,10 @@ function OrdersPage() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Time</SelectItem>
-              <SelectItem value="daily">Daily</SelectItem>
-              <SelectItem value="weekly">Weekly</SelectItem>
-              <SelectItem value="monthly">Monthly</SelectItem>
+              <SelectItem value="this week">This Week</SelectItem>
+              <SelectItem value="this month">This Month</SelectItem>
+              <SelectItem value="last week">Last Week</SelectItem>
+              <SelectItem value="last month">Last Month</SelectItem>
               <SelectItem value="custom">Custom</SelectItem>
             </SelectContent>
           </Select>
@@ -278,12 +289,12 @@ function OrdersPage() {
               <table className="w-full text-sm">
                 <thead className="border-b border-border bg-muted/40 text-xs uppercase tracking-wider text-muted-foreground">
                   <tr>
-                    <th className="px-4 py-3 text-left">ID / Ref</th>
-                    <th className="px-4 py-3 text-left">Customer</th>
+                    <th className="px-4 py-3 text-left">Name</th>
+                    <th className="px-4 py-3 text-left">Location</th>
                     <th className="px-4 py-3 text-left">Product</th>
-                    {isMediaBuyer && <th className="px-4 py-3 text-left">Form Name</th>}
+                    <th className="px-4 py-3 text-left">Qty</th>
                     {!isLeadTab && <th className="px-4 py-3 text-left">Amount</th>}
-                    {isMediaBuyer && <th className="px-4 py-3 text-left">Date</th>}
+                    <th className="px-4 py-3 text-left">Date</th>
                     <th className="px-4 py-3 text-left">Status</th>
                     {!isMediaBuyer && <th className="px-4 py-3 text-right">Actions</th>}
                   </tr>
@@ -293,37 +304,41 @@ function OrdersPage() {
                     const id = o._id || o.id || i;
                     const custName = o.customerName || o.name || "—";
                     const isLead = isLeadTab;
+                    const dateVal = o.createdAt || o.date || o.scheduleDate;
 
                     return (
                       <tr key={id} className="border-b border-border/60 hover:bg-muted/30">
-                        <td className="px-4 py-3 font-mono text-xs text-muted-foreground">
-                          #{String(id).slice(-6)}
+                        <td className="px-4 py-3 font-medium text-foreground">
+                          {custName}
                         </td>
-                        <td className="px-4 py-3">
-                          <div className="flex flex-col">
-                            <span className="font-medium text-foreground">{custName}</span>
-                            <span className="text-[11px] text-muted-foreground">{o.callNumber || o.phone || "—"}</span>
-                          </div>
+                        <td className="px-4 py-3 text-muted-foreground max-w-[150px] truncate" title={o.address}>
+                          {o.address || "—"}
                         </td>
-                        <td className="px-4 py-3">{o.product || o.productName || "—"}</td>
-                        {isMediaBuyer && (
-                          <td className="px-4 py-3 text-muted-foreground">{o.formName || "—"}</td>
-                        )}
+                        <td className="px-4 py-3 text-muted-foreground">{o.product || o.productName || "—"}</td>
+                        <td className="px-4 py-3 text-muted-foreground">{o.quantity || 1}</td>
                         {!isLeadTab && (
-                          <td className="px-4 py-3">{o.amount ? `₦${Number(o.amount).toLocaleString()}` : "—"}</td>
+                          <td className="px-4 py-3 font-medium">{o.amount ? `₦${Number(o.amount).toLocaleString()}` : "—"}</td>
                         )}
-                        {isMediaBuyer && (
-                          <td className="px-4 py-3 text-muted-foreground">
-                            {o.createdAt ? new Date(o.createdAt).toLocaleDateString() : (o.scheduleDate ? new Date(o.scheduleDate).toLocaleDateString() : "—")}
-                          </td>
-                        )}
+                        <td className="px-4 py-3 text-muted-foreground text-xs">
+                          {dateVal ? new Date(dateVal).toLocaleDateString() : "—"}
+                        </td>
                         <td className="px-4 py-3">
                           <StatusBadge status={o.status || o.deliveryStatus || (isLead ? "pending" : "")} />
                         </td>
                         {!isMediaBuyer && (
                           <td className="px-4 py-3 text-right">
-                            <div className="flex items-center justify-end gap-2">
-                              <Button size="sm" variant="outline" onClick={() => setViewItem(o)}>
+                            <div className="flex items-center justify-end gap-1">
+                              {(o.callNumber || o.phone) && (
+                                <a href={`tel:${o.callNumber || o.phone}`} className="inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground">
+                                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                                </a>
+                              )}
+                              {(o.whatsappNumber || o.phone) && (
+                                <a href={`https://wa.me/${(o.whatsappNumber || o.phone).replace(/\D/g, '')}`} target="_blank" rel="noreferrer" className="inline-flex h-8 w-8 items-center justify-center rounded-md text-emerald-500 hover:bg-emerald-500/10 hover:text-emerald-600">
+                                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+                                </a>
+                              )}
+                              <Button size="sm" variant="outline" onClick={() => setViewItem(o)} className="ml-1">
                                 View
                               </Button>
                               <Button size="sm" variant="ghost" onClick={() => setActivityItem(o)} title="View Activity Log">

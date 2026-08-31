@@ -30,6 +30,7 @@ export const Route = createFileRoute("/_authenticated/deliveries")({
 function DeliveriesPage() {
   const { user } = useAuth();
   const qc = useQueryClient();
+  const [viewItem, setViewItem] = useState<any | null>(null);
   const { data, isLoading } = useQuery({
     queryKey: ["deliveries"],
     queryFn: async () => (await api.get("/logistics/deliveries")).data,
@@ -90,11 +91,16 @@ function DeliveriesPage() {
                         </td>
                         <td className="px-4 py-3"><StatusBadge status={d.status} /></td>
                         <td className="px-4 py-3 text-right">
-                          <UpdateDeliveryStatusDialog 
-                            id={String(id)} 
-                            currentStatus={d.status}
-                            onDone={() => qc.invalidateQueries({ queryKey: ["deliveries"] })} 
-                          />
+                          <div className="flex items-center justify-end gap-2">
+                            <Button size="sm" variant="outline" onClick={() => setViewItem(d)}>
+                              View
+                            </Button>
+                            <UpdateDeliveryStatusDialog 
+                              id={String(id)} 
+                              currentStatus={d.status}
+                              onDone={() => qc.invalidateQueries({ queryKey: ["deliveries"] })} 
+                            />
+                          </div>
                         </td>
                       </tr>
                     );
@@ -105,6 +111,48 @@ function DeliveriesPage() {
           )}
         </CardContent>
       </Card>
+
+      <Dialog open={!!viewItem} onOpenChange={(open) => !open && setViewItem(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delivery Details</DialogTitle>
+          </DialogHeader>
+          {viewItem && (
+            <div className="space-y-3 py-4 text-sm">
+              <div className="flex justify-between p-2 bg-muted/30 rounded">
+                <span className="text-muted-foreground font-semibold">Delivery ID</span>
+                <span className="font-mono">#{String(viewItem._id || viewItem.id).slice(-6)}</span>
+              </div>
+              <div className="flex justify-between p-2 bg-muted/30 rounded">
+                <span className="text-muted-foreground font-semibold">Order ID</span>
+                <span className="font-mono">{viewItem.orderId || viewItem.order?._id || "—"}</span>
+              </div>
+              <div className="flex justify-between p-2 bg-muted/30 rounded">
+                <span className="text-muted-foreground font-semibold">Agent</span>
+                <span>
+                  {viewItem.deliveryAgent?.email || viewItem.deliveryAgentEmail || 
+                   (typeof viewItem.deliveryAgentId === 'string' ? viewItem.deliveryAgentId : viewItem.deliveryAgentId?.email) || "—"}
+                </span>
+              </div>
+              <div className="flex justify-between p-2 bg-muted/30 rounded">
+                <span className="text-muted-foreground font-semibold">Status</span>
+                <StatusBadge status={viewItem.status} />
+              </div>
+              <div className="flex justify-between p-2 bg-muted/30 rounded">
+                <span className="text-muted-foreground font-semibold">Delivery Fee</span>
+                <span>{viewItem.deliveryFee ? `₦${Number(viewItem.deliveryFee).toLocaleString()}` : "—"}</span>
+              </div>
+              <div className="flex justify-between p-2 bg-muted/30 rounded">
+                <span className="text-muted-foreground font-semibold">Created At</span>
+                <span>{viewItem.createdAt ? new Date(viewItem.createdAt).toLocaleString() : "—"}</span>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setViewItem(null)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

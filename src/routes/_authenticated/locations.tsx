@@ -27,12 +27,17 @@ export const Route = createFileRoute("/_authenticated/locations")({
 
 function LocationsPage() {
   const qc = useQueryClient();
+  const [activeTab, setActiveTab] = useState("ALL");
   const { data, isLoading } = useQuery({
     queryKey: ["locations"],
     queryFn: async () => (await apiActions.locations.list()).data,
   });
 
   const locations: any[] = Array.isArray(data) ? data : data?.data || [];
+  
+  const filteredLocations = activeTab === "ALL" 
+    ? locations 
+    : locations.filter(loc => (loc.type || "OFFICE").toUpperCase() === activeTab);
 
   return (
     <div className="space-y-6">
@@ -46,6 +51,29 @@ function LocationsPage() {
         }
       />
 
+      <div className="flex justify-start">
+        <div className="inline-flex h-10 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground">
+          <button
+            onClick={() => setActiveTab("ALL")}
+            className={`inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 ${activeTab === "ALL" ? "bg-background text-foreground shadow-sm" : "hover:bg-background/50"}`}
+          >
+            All
+          </button>
+          <button
+            onClick={() => setActiveTab("OFFICE")}
+            className={`inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 ${activeTab === "OFFICE" ? "bg-background text-foreground shadow-sm" : "hover:bg-background/50"}`}
+          >
+            Offices
+          </button>
+          <button
+            onClick={() => setActiveTab("WAREHOUSE")}
+            className={`inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 ${activeTab === "WAREHOUSE" ? "bg-background text-foreground shadow-sm" : "hover:bg-background/50"}`}
+          >
+            Warehouses
+          </button>
+        </div>
+      </div>
+
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {isLoading ? (
           Array.from({ length: 3 }).map((_, i) => (
@@ -53,16 +81,16 @@ function LocationsPage() {
               <div className="h-32" />
             </Card>
           ))
-        ) : locations.length === 0 ? (
+        ) : filteredLocations.length === 0 ? (
           <div className="col-span-full">
             <EmptyState
               icon={MapPin}
-              title="No locations yet"
-              description="Add your first office or warehouse to start tracking stock."
+              title={`No ${activeTab === "ALL" ? "locations" : activeTab.toLowerCase() + "s"} yet`}
+              description="Add your first location to start tracking stock."
             />
           </div>
         ) : (
-          locations.map((loc) => (
+          filteredLocations.map((loc) => (
             <LocationCard key={loc.id || loc._id} location={loc} />
           ))
         )}

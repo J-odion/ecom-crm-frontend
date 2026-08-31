@@ -7,6 +7,9 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Loader2, Users, Shield, Key, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -16,6 +19,38 @@ export const Route = createFileRoute("/_authenticated/permissions")({
   head: () => ({ meta: [{ title: "Access & Permissions — Ecom CRM" }] }),
   component: PermissionsPage,
 });
+
+const FALLBACK_PERMS = {
+  "Orders & Leads": [
+    { key: "orders:view", name: "View Orders", description: "Can view the orders list" },
+    { key: "orders:manage", name: "Manage Orders", description: "Can update status, add comments, mark delivered" }
+  ],
+  "Logistics & Deliveries": [
+    { key: "deliveries:view", name: "View Deliveries", description: "Can view the deliveries list" },
+    { key: "deliveries:manage", name: "Manage Deliveries", description: "Can assign deliveries and update delivery status" }
+  ],
+  "Inventory": [
+    { key: "inventory:view", name: "View Inventory", description: "Can view the inventory products and stock levels" },
+    { key: "inventory:manage", name: "Manage Inventory", description: "Can add products, stock in, and transfer stock" }
+  ],
+  "Finance": [
+    { key: "finance:view", name: "View Finance", description: "Can view financial dashboards and reports" },
+    { key: "finance:manage", name: "Manage Finance", description: "Can update financial records" }
+  ],
+  "Devices": [
+    { key: "devices:view", name: "View Devices", description: "Can view fleet devices" },
+    { key: "devices:manage", name: "Manage Devices", description: "Can add and sync devices" }
+  ],
+  "Users & Locations": [
+    { key: "users:view", name: "View Users", description: "Can view users list" },
+    { key: "users:manage", name: "Manage Users", description: "Can create and edit users" },
+    { key: "locations:manage", name: "Manage Locations", description: "Can add and manage locations" }
+  ],
+  "System": [
+    { key: "permissions:manage", name: "Manage Permissions", description: "Can manage user roles and granular access overrides" },
+    { key: "commissions:manage", name: "Manage Commissions", description: "Can configure commission rules" }
+  ]
+};
 
 function PermissionsPage() {
   const qc = useQueryClient();
@@ -33,6 +68,7 @@ function PermissionsPage() {
         <PageHeader
           title="Access & Permissions"
           description="Manage roles, departments, and granular permissions for all users."
+          actions={<CreateRoleDialog onDone={() => qc.invalidateQueries({ queryKey: ["roles"] })} />}
         />
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -103,7 +139,10 @@ function UserAccessManager({ userId, user }: { userId: string, user: any }) {
   });
 
   const access = accessData || { roleId: null, roleName: "", permissions: {}, overrides: {} };
-  const groupedPerms = groupedData || {};
+  let groupedPerms = groupedData || {};
+  if (Object.keys(groupedPerms).length === 0) {
+    groupedPerms = FALLBACK_PERMS;
+  }
   const roles = rolesData || [];
 
   const updateRole = useMutation({
@@ -236,5 +275,62 @@ function UserAccessManager({ userId, user }: { userId: string, user: any }) {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+function CreateRoleDialog({ onDone }: { onDone: () => void }) {
+  const [open, setOpen] = useState(false);
+  const [form, setForm] = useState({ name: "", description: "" });
+  const qc = useQueryClient();
+
+  const create = useMutation({
+    mutationFn: async () => (await apiActions.accessControl.createRole(form)).data,
+    onSuccess: () => {
+      toast.success("Role created successfully");
+      setOpen(false);
+      setForm({ name: "", description: "" });
+      onDone();
+      // Refetch roles explicitly just in case
+      qc.invalidateQueries({ queryKey: ["roles"] });
+    },
+    onError: (e: any) => toast.error(e.friendlyMessage || "Failed to create role"),
+  });
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button>Create Role</Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Create New Role</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4 py-4">
+          <div className="space-y-1.5">
+            <Label>Role Name</Label>
+            <Input 
+              value={form.name} 
+              onChange={(e) => setForm({ ...form, name: e.target.value })} 
+              placeholder="e.g. Regional Manager" 
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label>Description</Label>
+            <Textarea 
+              value={form.description} 
+              onChange={(e) => setForm({ ...form, description: e.target.value })} 
+              placeholder="What does this role do?" 
+            />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+          <Button onClick={() => create.mutate()} disabled={!form.name.trim() || create.isPending}>
+            {create.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+            Create Role
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

@@ -27,6 +27,7 @@ export const Route = createFileRoute("/_authenticated/inventory")({
 
 function InventoryPage() {
   const qc = useQueryClient();
+  const [viewItem, setViewItem] = useState<any | null>(null);
   const { data, isLoading } = useQuery({
     queryKey: ["inventory-products"],
     queryFn: async () => (await api.get("/inventory/products")).data,
@@ -63,6 +64,7 @@ function InventoryPage() {
                     <th className="px-4 py-3 text-left">Stock</th>
                     <th className="px-4 py-3 text-left">Cost</th>
                     <th className="px-4 py-3 text-left">Price</th>
+                    <th className="px-4 py-3 text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -70,8 +72,11 @@ function InventoryPage() {
                     <tr key={p._id || p.id || i} className="border-b border-border/60 hover:bg-muted/30">
                       <td className="px-4 py-3 font-medium">{p.name || p.productName || "—"}</td>
                       <td className="px-4 py-3">{p.stock ?? p.quantity ?? "—"}</td>
-                      <td className="px-4 py-3">{p.cost ? `₦${Number(p.cost).toLocaleString()}` : "—"}</td>
-                      <td className="px-4 py-3">{p.price ? `₦${Number(p.price).toLocaleString()}` : "—"}</td>
+                      <td className="px-4 py-3">{p.cost || p.baseCost ? `₦${Number(p.cost || p.baseCost).toLocaleString()}` : "—"}</td>
+                      <td className="px-4 py-3">{p.price || p.sellingPrice ? `₦${Number(p.price || p.sellingPrice).toLocaleString()}` : "—"}</td>
+                      <td className="px-4 py-3 text-right">
+                        <Button size="sm" variant="outline" onClick={() => setViewItem(p)}>View</Button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -80,6 +85,49 @@ function InventoryPage() {
           )}
         </CardContent>
       </Card>
+
+      <Dialog open={!!viewItem} onOpenChange={(open) => !open && setViewItem(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Product Details</DialogTitle>
+          </DialogHeader>
+          {viewItem && (
+            <div className="space-y-3 py-4 text-sm">
+              <div className="flex justify-between p-2 bg-muted/30 rounded">
+                <span className="text-muted-foreground font-semibold">Name</span>
+                <span className="font-medium">{viewItem.name || viewItem.productName || "—"}</span>
+              </div>
+              <div className="flex justify-between p-2 bg-muted/30 rounded">
+                <span className="text-muted-foreground font-semibold">Description</span>
+                <span className="text-right max-w-[200px] truncate" title={viewItem.description}>{viewItem.description || "—"}</span>
+              </div>
+              <div className="flex justify-between p-2 bg-muted/30 rounded">
+                <span className="text-muted-foreground font-semibold">Total Stock</span>
+                <span>{viewItem.stock ?? viewItem.quantity ?? "—"}</span>
+              </div>
+              <div className="flex justify-between p-2 bg-muted/30 rounded">
+                <span className="text-muted-foreground font-semibold">Cost Price</span>
+                <span>{viewItem.cost || viewItem.baseCost ? `₦${Number(viewItem.cost || viewItem.baseCost).toLocaleString()}` : "—"}</span>
+              </div>
+              <div className="flex justify-between p-2 bg-muted/30 rounded">
+                <span className="text-muted-foreground font-semibold">Selling Price</span>
+                <span>{viewItem.price || viewItem.sellingPrice ? `₦${Number(viewItem.price || viewItem.sellingPrice).toLocaleString()}` : "—"}</span>
+              </div>
+              <div className="flex justify-between p-2 bg-muted/30 rounded">
+                <span className="text-muted-foreground font-semibold">Category</span>
+                <span className="capitalize">{viewItem.category || "General"}</span>
+              </div>
+              <div className="flex justify-between p-2 bg-muted/30 rounded">
+                <span className="text-muted-foreground font-semibold">Created At</span>
+                <span>{viewItem.createdAt ? new Date(viewItem.createdAt).toLocaleString() : "—"}</span>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setViewItem(null)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -101,12 +101,7 @@ function UsersPage() {
                     <th className="px-4 py-3 text-left">Staff Member</th>
                     <th className="px-4 py-3 text-left">Role</th>
                     <th className="px-4 py-3 text-left">Location</th>
-                    <th className="px-4 py-3 text-left">Team</th>
-                    <th className="px-4 py-3 text-left">Commission Rate</th>
                     <th className="px-4 py-3 text-left">Base Salary</th>
-                    <th className="px-4 py-3 text-left">Current Commission</th>
-                    <th className="px-4 py-3 text-left">All-Time Commission</th>
-                    <th className="px-4 py-3 text-left">Total Salary Earned</th>
                     <th className="px-4 py-3 text-left">Status</th>
                     <th className="px-4 py-3 text-right">Actions</th>
                   </tr>
@@ -244,35 +239,6 @@ function UserRow({ user, locations, onUpdate, onOpenDashboard, onOpenDevice }: {
       <td className="px-4 py-4">
         {isEditing ? (
           <Input
-            className="h-8 w-[120px] text-xs"
-            value={team}
-            onChange={(e) => setTeam(e.target.value)}
-            placeholder="e.g. Team Alpha"
-          />
-        ) : (
-          <span className="text-xs text-muted-foreground">{user.team || "—"}</span>
-        )}
-      </td>
-      <td className="px-4 py-4">
-        {isEditing ? (
-          <Input
-            type="number"
-            className="h-8 w-[80px] text-xs"
-            value={commissionRate}
-            onChange={(e) => setCommissionRate(e.target.value)}
-            placeholder="0"
-          />
-        ) : (
-          <span className="text-xs text-muted-foreground">
-            {user.commissionRate !== undefined && user.commissionRate !== null
-              ? `${user.commissionRate}%`
-              : "—"}
-          </span>
-        )}
-      </td>
-      <td className="px-4 py-4">
-        {isEditing ? (
-          <Input
             type="number"
             className="h-8 w-[100px] text-xs"
             value={salary}
@@ -286,35 +252,6 @@ function UserRow({ user, locations, onUpdate, onOpenDashboard, onOpenDevice }: {
               : "—"}
           </span>
         )}
-      </td>
-      <td className="px-4 py-4">
-        <span className="text-xs text-muted-foreground font-semibold">
-          {user.currentCommission !== undefined && user.currentCommission !== null
-            ? `₦${Number(user.currentCommission).toLocaleString()}`
-            : user.currentCommissionEarned !== undefined && user.currentCommissionEarned !== null
-            ? `₦${Number(user.currentCommissionEarned).toLocaleString()}`
-            : "₦0"}
-        </span>
-      </td>
-      <td className="px-4 py-4">
-        <span className="text-xs text-muted-foreground font-semibold">
-          {user.allTimeCommission !== undefined && user.allTimeCommission !== null
-            ? `₦${Number(user.allTimeCommission).toLocaleString()}`
-            : user.allTimeCommissions !== undefined && user.allTimeCommissions !== null
-            ? `₦${Number(user.allTimeCommissions).toLocaleString()}`
-            : "₦0"}
-        </span>
-      </td>
-      <td className="px-4 py-4">
-        <span className="text-xs text-muted-foreground font-semibold">
-          {user.totalSalaryEarned !== undefined && user.totalSalaryEarned !== null
-            ? `₦${Number(user.totalSalaryEarned).toLocaleString()}`
-            : user.totalAllTimeSalaryEarned !== undefined && user.totalAllTimeSalaryEarned !== null
-            ? `₦${Number(user.totalAllTimeSalaryEarned).toLocaleString()}`
-            : user.allTimeSalaryEarned !== undefined && user.allTimeSalaryEarned !== null
-            ? `₦${Number(user.allTimeSalaryEarned).toLocaleString()}`
-            : "₦0"}
-        </span>
       </td>
       <td className="px-4 py-4">
         <Button
