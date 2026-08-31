@@ -38,14 +38,14 @@ interface NavItem {
   to: string;
   label: string;
   icon: React.ComponentType<{ className?: string }>;
-  roles: Role[] | "all";
+  permissions: string[] | "all";
 }
 
 const NAV: { group: string; items: NavItem[] }[] = [
   {
     group: "Overview",
     items: [
-      { to: "/", label: "Dashboard", icon: LayoutDashboard, roles: "all" },
+      { to: "/", label: "Dashboard", icon: LayoutDashboard, permissions: "all" },
     ],
   },
   {
@@ -55,19 +55,19 @@ const NAV: { group: string; items: NavItem[] }[] = [
         to: "/order-forms",
         label: "Order Forms",
         icon: Code2,
-        roles: ["admin", "dev", "customer_service_manager", "marketing_manager", "media_buyer", "sales_agent"],
+        permissions: ["order_forms:view"],
       },
       {
         to: "/orders",
         label: "Orders",
         icon: ShoppingCart,
-        roles: ["customer_service", "admin", "dev", "customer_service_manager", "logistics", "logistics_manager", "accountant", "delivery_agent", "marketing_manager"],
+        permissions: ["orders:view"],
       },
       {
         to: "/media-buyer",
         label: "Media Buyer",
         icon: Megaphone,
-        roles: ["sales_agent", "media_buyer", "admin", "dev", "marketing_manager"],
+        permissions: ["media_buyer:view"],
       },
     ],
   },
@@ -78,43 +78,44 @@ const NAV: { group: string; items: NavItem[] }[] = [
         to: "/deliveries",
         label: "Deliveries",
         icon: Truck,
-        roles: ["logistics", "logistics_manager", "delivery_agent", "admin", "dev"],
+        permissions: ["deliveries:view"],
       },
       {
         to: "/inventory",
         label: "Inventory",
         icon: Boxes,
-        roles: ["admin", "dev", "logistics", "logistics_manager", "accountant"],
+        permissions: ["inventory:view"],
       },
-      { to: "/products", label: "Products", icon: Package, roles: "all" },
-      { to: "/locations", label: "Locations", icon: MapPin, roles: ["admin", "dev", "logistics", "logistics_manager"] },
+      { to: "/products", label: "Products", icon: Package, permissions: ["products:view"] },
+      { to: "/locations", label: "Locations", icon: MapPin, permissions: ["locations:view"] },
     ],
   },
   {
     group: "Finance",
     items: [
-      { to: "/accounting", label: "Accounting", icon: BookOpen, roles: ["accountant", "admin"] },
-      { to: "/accountant", label: "Remittance", icon: ReceiptText, roles: ["accountant", "admin", "dev"] },
-      { to: "/finance", label: "Finance", icon: Wallet, roles: ["admin", "dev", "accountant"] },
-      { to: "/earnings", label: "Earnings", icon: Wallet, roles: ["admin", "dev", "accountant", "customer_service", "customer_service_manager", "logistics", "logistics_manager", "delivery_agent", "media_buyer"] },
-      { to: "/commission-rules", label: "Commission Rules", icon: Percent, roles: ["admin", "dev"] },
+      { to: "/accounting", label: "Accounting", icon: BookOpen, permissions: ["accounting:view"] },
+      { to: "/accountant", label: "Remittance", icon: ReceiptText, permissions: ["remittance:view"] },
+      { to: "/finance", label: "Finance", icon: Wallet, permissions: ["finance:view"] },
+      { to: "/earnings", label: "Earnings", icon: Wallet, permissions: ["earnings:view"] },
+      { to: "/commission-rules", label: "Commission Rules", icon: Percent, permissions: ["commission_rules:view"] },
     ],
   },
   {
     group: "Admin",
     items: [
-      { to: "/permissions", label: "Permissions", icon: Key, roles: ["admin", "dev"] },
-      { to: "/users", label: "Users", icon: Users, roles: ["admin", "dev", "manager", "accountant"] },
-      { to: "/audit-trail", label: "Audit Trail", icon: History, roles: ["admin", "dev"] },
-      { to: "/devices", label: "Devices", icon: Laptop, roles: ["admin", "dev", "management"] },
-      { to: "/settings", label: "Settings", icon: Settings, roles: "all" },
+      { to: "/permissions", label: "Permissions", icon: Key, permissions: ["permissions:manage"] },
+      { to: "/users", label: "Users", icon: Users, permissions: ["users:view"] },
+      { to: "/audit-trail", label: "Audit Trail", icon: History, permissions: ["audit_trail:view"] },
+      { to: "/devices", label: "Devices", icon: Laptop, permissions: ["devices:view"] },
+      { to: "/settings", label: "Settings", icon: Settings, permissions: "all" },
     ],
   },
 ];
 
 export function AppSidebar() {
   const { user } = useAuth();
-  const role = user?.role;
+  const userPerms = user?.permissions || [];
+  const hasWildcard = userPerms.includes("*");
   const path = useRouterState({ select: (s) => s.location.pathname });
 
   return (
@@ -135,7 +136,7 @@ export function AppSidebar() {
       <SidebarContent>
         {NAV.map((group) => {
           const items = group.items.filter(
-            (i) => i.roles === "all" || (role && i.roles.includes(role)),
+            (i) => i.permissions === "all" || hasWildcard || i.permissions.some(p => userPerms.includes(p))
           );
           if (!items.length) return null;
           return (

@@ -7,6 +7,7 @@ export interface AuthUser {
   _id?: string;
   email: string;
   role: Role;
+  permissions: string[];
   [k: string]: any;
 }
 
@@ -33,12 +34,14 @@ function decodeUser(token: string, fallback: Partial<AuthUser> = {}): AuthUser {
       id: decoded.sub || decoded.id || decoded._id,
       email: decoded.email || fallback.email || "",
       role: (decoded.role as Role) || (fallback.role as Role) || "sales_agent",
+      permissions: decoded.permissions || fallback.permissions || [],
       ...decoded,
     };
   } catch {
     return {
       email: fallback.email || "",
       role: (fallback.role as Role) || "sales_agent",
+      permissions: fallback.permissions || [],
       ...fallback,
     } as AuthUser;
   }
@@ -60,6 +63,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         id: "mock-admin",
         email: "admin@ecom.test",
         role: "admin",
+        permissions: ['*'], // Give dev mock user all permissions
       });
       setTokenState("mock-token");
     }

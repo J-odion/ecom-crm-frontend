@@ -7,10 +7,10 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Loader2, Users, Shield, Key } from "lucide-react";
+import { Loader2, Users, Shield, Key, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { RoleGate } from "@/components/role-gate";
+import { PermissionGate } from "@/components/permission-gate";
 
 export const Route = createFileRoute("/_authenticated/permissions")({
   head: () => ({ meta: [{ title: "Access & Permissions — Ecom CRM" }] }),
@@ -28,7 +28,7 @@ function PermissionsPage() {
   const users: any[] = Array.isArray(usersData) ? usersData : usersData?.data || [];
 
   return (
-    <RoleGate allowedRoles={["admin", "dev"]}>
+    <PermissionGate allowedPermissions={["permissions:manage"]}>
       <div className="space-y-6">
         <PageHeader
           title="Access & Permissions"
@@ -80,7 +80,7 @@ function PermissionsPage() {
           </div>
         </div>
       </div>
-    </RoleGate>
+    </PermissionGate>
   );
 }
 
@@ -97,19 +97,13 @@ function UserAccessManager({ userId, user }: { userId: string, user: any }) {
     queryFn: async () => (await apiActions.permissions.getGrouped()).data,
   });
 
-  const { data: departmentsData } = useQuery({
-    queryKey: ["departments"],
-    queryFn: async () => (await apiActions.accessControl.getDepartments()).data,
-  });
-
   const { data: rolesData } = useQuery({
     queryKey: ["roles"],
     queryFn: async () => (await apiActions.accessControl.getRoles()).data,
   });
 
-  const access = accessData;
+  const access = accessData || { roleId: null, roleName: "", permissions: {}, overrides: {} };
   const groupedPerms = groupedData || {};
-  const departments = departmentsData || [];
   const roles = rolesData || [];
 
   const updateRole = useMutation({
@@ -122,13 +116,22 @@ function UserAccessManager({ userId, user }: { userId: string, user: any }) {
   });
 
   const toggleOverride = useMutation({
-    mutationFn: ({ key, granted }: { key: string; granted: boolean }) => 
-      apiActions.accessControl.toggleOverride(userId, key, granted, "Manual toggle from permissions page"),
+    mutationFn: ({ key, value }: { key: string; value: boolean }) => 
+      apiActions.accessControl.toggleOverride(userId, key, value),
     onSuccess: () => {
       toast.success("Permission updated");
       qc.invalidateQueries({ queryKey: ["userAccess", userId] });
     },
     onError: (e: any) => toast.error(e.friendlyMessage || "Failed to update permission"),
+  });
+
+  const removeOverride = useMutation({
+    mutationFn: (key: string) => apiActions.accessControl.removeOverride(userId, key),
+    onSuccess: () => {
+      toast.success("Override removed, reverted to default");
+      qc.invalidateQueries({ queryKey: ["userAccess", userId] });
+    },
+    onError: (e: any) => toast.error(e.friendlyMessage || "Failed to remove override"),
   });
 
   if (loadingAccess) {
@@ -149,7 +152,7 @@ function UserAccessManager({ userId, user }: { userId: string, user: any }) {
           <div className="space-y-3">
             <Label>Assigned Group Role</Label>
             <Select 
-              value={access?.role?._id || access?.role?.id || "none"} 
+              value={access.roleId || "none"} 
               onValueChange={(val) => updateRole.mutate(val === "none" ? null : val)}
             >
               <SelectTrigger className="w-full sm:w-[300px]"><SelectValue placeholder="Select a Role" /></SelectTrigger>
@@ -180,31 +183,42 @@ function UserAccessManager({ userId, user }: { userId: string, user: any }) {
               </div>
               <div className="divide-y divide-border/50">
                 {perms.map((p: any) => {
-                  const isGranted = access?.resolvedPermissions?.includes(p.key) || false;
-                  // Look for explicit override
-                  const override = access?.overrides?.find((o: any) => o.permissionKey === p.key);
-                  const isExplicit = !!override;
+                  const hasOverride = access.overrides && p.key in access.overrides;
+                  const isGranted = hasOverride ? access.overrides[p.key] : access.permissions?.[p.key] || false;
+                  const overrideVal = hasOverride ? access.overrides[p.key] : null;
                   
                   return (
                     <div key={p.key} className="flex items-center justify-between px-6 py-4 hover:bg-muted/10">
                       <div>
                         <div className="font-medium text-sm flex items-center gap-2">
                           {p.name}
-                          {isExplicit && (
-                            <span className={`text-[9px] uppercase px-1.5 py-0.5 rounded ${override.granted ? 'bg-emerald-500/10 text-emerald-600' : 'bg-red-500/10 text-red-600'}`}>
-                              {override.granted ? 'Explicit Grant' : 'Explicit Revoke'}
+                          {hasOverride && (
+                            <span className={`text-[9px] uppercase px-1.5 py-0.5 rounded ${overrideVal ? 'bg-emerald-500/10 text-emerald-600' : 'bg-red-500/10 text-red-600'}`}>
+                              {overrideVal ? 'Explicit Grant' : 'Explicit Revoke'}
                             </span>
                           )}
                         </div>
                         <div className="text-xs text-muted-foreground">{p.description}</div>
                         <div className="text-[10px] text-muted-foreground font-mono mt-1 opacity-60">{p.key}</div>
                       </div>
-                      <div className="flex items-center">
+                      <div className="flex items-center gap-3">
+                        {hasOverride && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                            onClick={() => removeOverride.mutate(p.key)}
+                            disabled={removeOverride.isPending}
+                            title="Reset to default"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
                         <Switch
                           checked={isGranted}
                           disabled={toggleOverride.isPending}
                           onCheckedChange={(checked) => {
-                            toggleOverride.mutate({ key: p.key, granted: checked });
+                            toggleOverride.mutate({ key: p.key, value: checked });
                           }}
                         />
                       </div>

@@ -33,7 +33,7 @@ import {
   Palette,
 } from "lucide-react";
 import { toast } from "sonner";
-import { RoleGate } from "@/components/role-gate";
+import { PermissionGate } from "@/components/permission-gate";
 import { EmptyState } from "@/components/empty-state";
 import { useAuth } from "@/lib/auth";
 import { UnauthorizedView } from "@/components/unauthorized-view";
@@ -49,7 +49,7 @@ function orderFormsPage() {
   const matchRoute = useMatchRoute();
   const isCreateRoute = matchRoute({ to: "/order-forms/create" });
 
-  if (user?.role === "customer_service") {
+  if (!user?.permissions?.includes("order_forms:view") && !user?.permissions?.includes("*")) {
     return <UnauthorizedView />;
   }
 
@@ -70,14 +70,14 @@ function orderFormsPage() {
         title="Order Forms"
         description="Create and manage embeddable forms for your landing pages."
         actions={
-          <RoleGate allowedRoles={["admin", "dev", "media_buyer", "marketing_manager", "sales_agent", "customer_service_manager"]}>
+          <PermissionGate allowedPermissions={["order_forms:manage"]}>
             <Button asChild>
               <Link to="/order-forms/create">
                 <Plus className="h-4 w-4 mr-2" />
                 Create Form
               </Link>
             </Button>
-          </RoleGate>
+          </PermissionGate>
         }
       />
 
@@ -147,7 +147,7 @@ function FormCard({ form }: { form: any }) {
                 <ExternalLink className="h-4 w-4" />
               </a>
             </Button>
-            <RoleGate allowedRoles={["admin"]}>
+            <PermissionGate allowedPermissions={["order_forms:delete"]}>
               <Button
                 variant="ghost"
                 size="icon"
@@ -165,7 +165,7 @@ function FormCard({ form }: { form: any }) {
                   <Trash2 className="h-4 w-4" />
                 )}
               </Button>
-            </RoleGate>
+            </PermissionGate>
           </div>
         </div>
         <div className="mt-3 space-y-1">

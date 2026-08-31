@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/dialog";
 import { MapPin, Plus, Loader2, Trash2, Building2 } from "lucide-react";
 import { toast } from "sonner";
-import { RoleGate } from "@/components/role-gate";
+import { PermissionGate } from "@/components/permission-gate";
 import { EmptyState } from "@/components/empty-state";
 
 export const Route = createFileRoute("/_authenticated/locations")({
@@ -40,9 +40,9 @@ function LocationsPage() {
         title="Locations"
         description="Manage your offices and warehouses across the country."
         actions={
-          <RoleGate allowedRoles={["admin"]}>
+          <PermissionGate allowedPermissions={["locations:manage"]}>
             <CreateLocationDialog onDone={() => qc.invalidateQueries({ queryKey: ["locations"] })} />
-          </RoleGate>
+          </PermissionGate>
         }
       />
 
@@ -89,7 +89,7 @@ function LocationCard({ location }: { location: any }) {
           <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
             <Building2 className="h-5 w-5" />
           </div>
-          <RoleGate allowedRoles={["admin"]}>
+          <PermissionGate allowedPermissions={["locations:delete"]}>
             <Button
               variant="ghost"
               size="icon"
@@ -107,7 +107,7 @@ function LocationCard({ location }: { location: any }) {
                 <Trash2 className="h-4 w-4" />
               )}
             </Button>
-          </RoleGate>
+          </PermissionGate>
         </div>
         <div className="mt-4">
           <h3 className="font-semibold text-lg">{location.name}</h3>

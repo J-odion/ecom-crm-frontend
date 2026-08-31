@@ -202,9 +202,10 @@ export const apiActions = {
     createRole: (d: any) => api.post("/roles", d),
     getUserAccess: (userId: string) => api.get(`/users/${userId}/access`),
     assignDepartment: (userId: string, department: string | null) => api.patch(`/users/${userId}/access/department`, { department }),
-    assignRole: (userId: string, role: string | null) => api.patch(`/users/${userId}/access/role`, { role }),
-    toggleOverride: (userId: string, permissionKey: string, granted: boolean, reason?: string) => api.patch(`/users/${userId}/access/toggle`, { permissionKey, granted, reason }),
-    removeOverride: (userId: string, permissionKey: string) => api.delete(`/users/${userId}/access/override/${encodeURIComponent(permissionKey)}`),
+    assignRole: (userId: string, roleId: string | null) => api.patch(`/users/${userId}/access/role`, { roleId }),
+    toggleOverride: (userId: string, key: string, value: boolean) => api.patch(`/users/${userId}/access/toggle`, { key, value }),
+    bulkToggle: (userId: string, toggles: { key: string, value: boolean }[]) => api.post(`/users/${userId}/access/bulk-toggle`, { toggles }),
+    removeOverride: (userId: string, key: string) => api.delete(`/users/${userId}/access/override/${encodeURIComponent(key)}`),
   },
   permissions: {
     getGrouped: () => api.get("/permissions/grouped"),

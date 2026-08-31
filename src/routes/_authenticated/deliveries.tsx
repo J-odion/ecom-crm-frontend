@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/auth";
-import { RoleGate } from "@/components/role-gate";
+import { PermissionGate } from "@/components/permission-gate";
 
 export const Route = createFileRoute("/_authenticated/deliveries")({
   head: () => ({ meta: [{ title: "Deliveries — Ecom CRM" }] }),
@@ -42,9 +42,9 @@ function DeliveriesPage() {
         title="Deliveries"
         description={user?.role === "delivery_agent" ? "Your assigned deliveries." : "All deliveries across logistics."}
         actions={
-          <RoleGate allowedRoles={["admin", "logistics"]}>
+          <PermissionGate allowedPermissions={["deliveries:manage"]}>
             <AssignDeliveryDialog onDone={() => qc.invalidateQueries({ queryKey: ["deliveries"] })} />
-          </RoleGate>
+          </PermissionGate>
         }
       />
 
