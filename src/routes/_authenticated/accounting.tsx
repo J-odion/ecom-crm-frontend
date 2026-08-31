@@ -23,6 +23,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { FinancialFilterBar, type FinancialFilters } from "@/components/financial-filter-bar";
 
 export const Route = createFileRoute("/_authenticated/accounting")({
   head: () => ({ meta: [{ title: "Accounting — Ecom CRM" }] }),
@@ -44,12 +45,17 @@ function AccountingPage() {
         description="Double-entry ledger, chart of accounts, and financial periods." 
       />
 
-      <Tabs defaultValue="accounts" className="space-y-6">
+      <Tabs defaultValue="reports" className="space-y-6">
         <TabsList>
+          <TabsTrigger value="reports">Financial Reports</TabsTrigger>
           <TabsTrigger value="accounts">Chart of Accounts</TabsTrigger>
           <TabsTrigger value="journals">Journal Entries</TabsTrigger>
           <TabsTrigger value="periods">Accounting Periods</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="reports">
+          <ReportsTab />
+        </TabsContent>
 
         <TabsContent value="accounts">
           <ChartOfAccountsTab />
@@ -63,6 +69,202 @@ function AccountingPage() {
           <AccountingPeriodsTab />
         </TabsContent>
       </Tabs>
+    </div>
+  );
+}
+
+// ----------------------------------------------------------------------
+// FINANCIAL REPORTS
+// ----------------------------------------------------------------------
+function ReportsTab() {
+  const [filters, setFilters] = useState<FinancialFilters>({});
+
+  const queryParams = new URLSearchParams();
+  if (filters.date) queryParams.set("date", filters.date);
+  if (filters.startDate) queryParams.set("startDate", filters.startDate);
+  if (filters.endDate) queryParams.set("endDate", filters.endDate);
+  if (filters.state) queryParams.set("state", filters.state);
+  if (filters.officeId) queryParams.set("officeId", filters.officeId);
+  if (filters.productId) queryParams.set("productId", filters.productId);
+  const queryString = queryParams.toString() ? `?${queryParams.toString()}` : "";
+
+  const { data: incomeStatementData, isLoading: isLoading1 } = useQuery({
+    queryKey: ["accounting-reports-income-statement", filters],
+    queryFn: async () => (await api.get(`/accounting/reports/income-statement${queryString}`)).data,
+  });
+
+  const { data: balanceSheetData, isLoading: isLoading2 } = useQuery({
+    queryKey: ["accounting-reports-balance-sheet", filters],
+    queryFn: async () => (await api.get(`/accounting/reports/balance-sheet${queryString}`)).data,
+  });
+
+  const { data: cashFlowData, isLoading: isLoading3 } = useQuery({
+    queryKey: ["accounting-reports-cash-flow-statement", filters],
+    queryFn: async () => (await api.get(`/accounting/reports/cash-flow-statement${queryString}`)).data,
+  });
+
+  const incomeStatement = incomeStatementData || { revenue: [], totalRevenue: 0, cogs: [], totalCogs: 0, grossProfit: 0, expenses: [], totalExpenses: 0, netIncome: 0 };
+  const balanceSheet = balanceSheetData || { assets: [], totalAssets: 0, liabilities: [], totalLiabilities: 0, equity: [], totalEquity: 0 };
+  const cashFlowStmt = cashFlowData || { cashAccounts: [], netCashFlow: 0 };
+
+  const isLoading = isLoading1 || isLoading2 || isLoading3;
+
+  return (
+    <div className="space-y-6">
+      <FinancialFilterBar filters={filters} onChange={setFilters} />
+      
+      {isLoading ? (
+        <div className="flex justify-center p-12 text-muted-foreground"><Loader2 className="h-6 w-6 animate-spin mr-2" /> Loading reports...</div>
+      ) : (
+        <div className="grid gap-6 md:grid-cols-2">
+          {/* Income Statement */}
+          <Card className="md:col-span-2 lg:col-span-1">
+            <CardHeader className="bg-muted/40">
+              <CardTitle>Income Statement</CardTitle>
+              <CardDescription>Profit and Loss</CardDescription>
+            </CardHeader>
+            <CardContent className="pt-6">
+              <div className="space-y-4 text-sm">
+                <div>
+                  <h4 className="font-semibold text-muted-foreground mb-2">Revenue</h4>
+                  {incomeStatement.revenue?.map((acc: any) => (
+                    <div key={acc.code} className="flex justify-between py-1 border-b border-border/40 last:border-0 pl-4">
+                      <span>{acc.name}</span>
+                      <span>₦{Number(acc.balance).toLocaleString()}</span>
+                    </div>
+                  ))}
+                  <div className="flex justify-between font-medium pt-2 border-t border-border mt-1">
+                    <span>Total Revenue</span>
+                    <span>₦{Number(incomeStatement.totalRevenue).toLocaleString()}</span>
+                  </div>
+                </div>
+
+                <div>
+                  <h4 className="font-semibold text-muted-foreground mb-2">Cost of Goods Sold (COGS)</h4>
+                  {incomeStatement.cogs?.map((acc: any) => (
+                    <div key={acc.code} className="flex justify-between py-1 border-b border-border/40 last:border-0 pl-4">
+                      <span>{acc.name}</span>
+                      <span>₦{Number(acc.balance).toLocaleString()}</span>
+                    </div>
+                  ))}
+                  <div className="flex justify-between font-medium pt-2 border-t border-border mt-1">
+                    <span>Total COGS</span>
+                    <span>₦{Number(incomeStatement.totalCogs).toLocaleString()}</span>
+                  </div>
+                </div>
+
+                <div className="flex justify-between font-semibold text-base py-3 border-y border-border bg-muted/20 px-2 rounded">
+                  <span>Gross Profit</span>
+                  <span>₦{Number(incomeStatement.grossProfit).toLocaleString()}</span>
+                </div>
+
+                <div>
+                  <h4 className="font-semibold text-muted-foreground mb-2">Expenses</h4>
+                  {incomeStatement.expenses?.map((acc: any) => (
+                    <div key={acc.code} className="flex justify-between py-1 border-b border-border/40 last:border-0 pl-4">
+                      <span>{acc.name}</span>
+                      <span>₦{Number(acc.balance).toLocaleString()}</span>
+                    </div>
+                  ))}
+                  <div className="flex justify-between font-medium pt-2 border-t border-border mt-1">
+                    <span>Total Expenses</span>
+                    <span>₦{Number(incomeStatement.totalExpenses).toLocaleString()}</span>
+                  </div>
+                </div>
+                
+                <div className="flex justify-between font-bold text-lg pt-4 border-t-2 border-border">
+                  <span>Net Income</span>
+                  <span className={incomeStatement.netIncome >= 0 ? "text-success" : "text-destructive"}>
+                    ₦{Number(incomeStatement.netIncome).toLocaleString()}
+                  </span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <div className="space-y-6">
+            {/* Balance Sheet */}
+            <Card>
+              <CardHeader className="bg-muted/40">
+                <CardTitle>Balance Sheet</CardTitle>
+                <CardDescription>Assets, Liabilities, Equity</CardDescription>
+              </CardHeader>
+              <CardContent className="pt-6">
+                <div className="space-y-4 text-sm">
+                  <div>
+                    <h4 className="font-semibold text-muted-foreground mb-2">Assets</h4>
+                    {balanceSheet.assets?.map((acc: any) => (
+                      <div key={acc.code} className="flex justify-between py-1 border-b border-border/40 last:border-0 pl-4">
+                        <span>{acc.name}</span>
+                        <span>₦{Number(acc.balance).toLocaleString()}</span>
+                      </div>
+                    ))}
+                    <div className="flex justify-between font-medium pt-2 border-t border-border mt-1">
+                      <span>Total Assets</span>
+                      <span>₦{Number(balanceSheet.totalAssets).toLocaleString()}</span>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h4 className="font-semibold text-muted-foreground mb-2">Liabilities</h4>
+                    {balanceSheet.liabilities?.map((acc: any) => (
+                      <div key={acc.code} className="flex justify-between py-1 border-b border-border/40 last:border-0 pl-4">
+                        <span>{acc.name}</span>
+                        <span>₦{Number(acc.balance).toLocaleString()}</span>
+                      </div>
+                    ))}
+                    <div className="flex justify-between font-medium pt-2 border-t border-border mt-1">
+                      <span>Total Liabilities</span>
+                      <span>₦{Number(balanceSheet.totalLiabilities).toLocaleString()}</span>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h4 className="font-semibold text-muted-foreground mb-2">Equity</h4>
+                    {balanceSheet.equity?.map((acc: any) => (
+                      <div key={acc.code} className="flex justify-between py-1 border-b border-border/40 last:border-0 pl-4">
+                        <span>{acc.name}</span>
+                        <span>₦{Number(acc.balance).toLocaleString()}</span>
+                      </div>
+                    ))}
+                    <div className="flex justify-between font-medium pt-2 border-t border-border mt-1">
+                      <span>Total Equity</span>
+                      <span>₦{Number(balanceSheet.totalEquity).toLocaleString()}</span>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Cash Flow */}
+            <Card>
+              <CardHeader className="bg-muted/40">
+                <CardTitle>Cash Flow Statement</CardTitle>
+                <CardDescription>Net cash across accounts</CardDescription>
+              </CardHeader>
+              <CardContent className="pt-6">
+                <div className="space-y-4 text-sm">
+                  <div>
+                    <h4 className="font-semibold text-muted-foreground mb-2">Cash & Bank Accounts</h4>
+                    {cashFlowStmt.cashAccounts?.map((acc: any) => (
+                      <div key={acc.code} className="flex justify-between py-1 border-b border-border/40 last:border-0 pl-4">
+                        <span>{acc.name}</span>
+                        <span>₦{Number(acc.balance).toLocaleString()}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="flex justify-between font-bold text-base pt-4 border-t border-border bg-muted/20 px-2 py-3 rounded">
+                    <span>Net Cash Flow</span>
+                    <span className={cashFlowStmt.netCashFlow >= 0 ? "text-success" : "text-destructive"}>
+                      ₦{Number(cashFlowStmt.netCashFlow).toLocaleString()}
+                    </span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

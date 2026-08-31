@@ -96,6 +96,7 @@ const NAV: { group: string; items: NavItem[] }[] = [
       { to: "/accounting", label: "Accounting", icon: BookOpen, roles: ["accountant", "admin"] },
       { to: "/accountant", label: "Remittance", icon: ReceiptText, roles: ["accountant", "admin", "dev"] },
       { to: "/finance", label: "Finance", icon: Wallet, roles: ["admin", "dev", "accountant"] },
+      { to: "/earnings", label: "Earnings", icon: Wallet, roles: ["admin", "dev", "accountant", "customer_service", "customer_service_manager", "logistics", "logistics_manager", "delivery_agent", "media_buyer"] },
       { to: "/commission-rules", label: "Commission Rules", icon: Percent, roles: ["admin", "dev"] },
     ],
   },

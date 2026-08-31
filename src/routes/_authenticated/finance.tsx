@@ -4,13 +4,14 @@ import { api } from "@/lib/api";
 import { PageHeader } from "@/components/page-header";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { StatCard } from "@/components/stat-card";
-import { Wallet, TrendingUp, Loader2, Users } from "lucide-react";
+import { Wallet, TrendingUp, Loader2, Users, ArrowDownRight, ArrowUpRight, Receipt } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { toast } from "sonner";
 import { ROLE_LABEL, type Role } from "@/lib/api";
+import { FinancialFilterBar, type FinancialFilters } from "@/components/financial-filter-bar";
 
 export const Route = createFileRoute("/_authenticated/finance")({
   head: () => ({ meta: [{ title: "Finance — Ecom CRM" }] }),
@@ -19,14 +20,35 @@ export const Route = createFileRoute("/_authenticated/finance")({
 
 function FinancePage() {
   const qc = useQueryClient();
-  const profitQ = useQuery({
-    queryKey: ["finance-profit"],
-    queryFn: async () => (await api.get("/finance/profit")).data,
+  const [filters, setFilters] = useState<FinancialFilters>({});
+
+  const queryParams = new URLSearchParams();
+  if (filters.date) queryParams.set("date", filters.date);
+  if (filters.startDate) queryParams.set("startDate", filters.startDate);
+  if (filters.endDate) queryParams.set("endDate", filters.endDate);
+  if (filters.state) queryParams.set("state", filters.state);
+  if (filters.officeId) queryParams.set("officeId", filters.officeId);
+  if (filters.productId) queryParams.set("productId", filters.productId);
+  const queryString = queryParams.toString() ? `?${queryParams.toString()}` : "";
+
+  const { data: cashFlowData } = useQuery({
+    queryKey: ["finance", "cash-flow", filters],
+    queryFn: async () => (await api.get(`/finance/cash-flow${queryString}`)).data,
   });
-  const data: any = profitQ.data || {};
-  const revenue = data.revenue ?? data.totalRevenue ?? 0;
-  const profit = data.profit ?? data.totalProfit ?? 0;
-  const cost = data.cost ?? data.totalCost ?? 0;
+
+  const { data: bankInflowData } = useQuery({
+    queryKey: ["finance", "bank-inflow", filters],
+    queryFn: async () => (await api.get(`/finance/bank-inflow${queryString}`)).data,
+  });
+
+  const { data: expenseData } = useQuery({
+    queryKey: ["finance", "expense", filters],
+    queryFn: async () => (await api.get(`/finance/expense${queryString}`)).data,
+  });
+
+  const cashFlow = cashFlowData || { inflow: 0, outflow: 0, net: 0 };
+  const bankInflow = bankInflowData?.inflow || 0;
+  const expense = expenseData || { total: 0, breakdown: {} };
 
   const { data: usersData, isLoading: usersLoading } = useQuery({
     queryKey: ["users"],
@@ -44,20 +66,70 @@ function FinancePage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Finance" description="System-wide revenue, profit and wallet lookups." />
-      <div className="grid gap-4 sm:grid-cols-3">
-        <StatCard label="Revenue" value={`₦${Number(revenue).toLocaleString()}`} icon={TrendingUp} />
-        <StatCard label="Cost" value={`₦${Number(cost).toLocaleString()}`} icon={Wallet} accent="warning" />
-        <StatCard label="Profit" value={`₦${Number(profit).toLocaleString()}`} icon={Wallet} accent="success" />
+      <PageHeader title="Finance Dashboard" description="Monitor system-wide cash flow, expenses, and manage staff salaries." />
+      
+      <FinancialFilterBar filters={filters} onChange={setFilters} />
+
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <StatCard 
+          label="Bank Inflow (Revenue)" 
+          value={`₦${Number(bankInflow).toLocaleString()}`} 
+          icon={TrendingUp} 
+          accent="primary" 
+        />
+        <StatCard 
+          label="Total Cash Inflow" 
+          value={`₦${Number(cashFlow.inflow).toLocaleString()}`} 
+          icon={ArrowUpRight} 
+          accent="success" 
+        />
+        <StatCard 
+          label="Total Cash Outflow" 
+          value={`₦${Number(cashFlow.outflow).toLocaleString()}`} 
+          icon={ArrowDownRight} 
+          accent="destructive" 
+        />
+        <StatCard 
+          label="Net Cash Flow" 
+          value={`₦${Number(cashFlow.net).toLocaleString()}`} 
+          icon={Wallet} 
+          accent={cashFlow.net >= 0 ? "success" : "destructive"} 
+        />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
+        <Card className="lg:col-span-1">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Receipt className="h-5 w-5 text-destructive" /> Expenses Breakdown
+            </CardTitle>
+            <CardDescription>Detailed view of all system expenses for the selected period.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="rounded-lg border border-border bg-muted/30 p-4 text-sm mb-4 text-center">
+              <p className="text-xs uppercase tracking-wider text-muted-foreground">Total Expenses</p>
+              <p className="mt-1 text-3xl font-semibold text-destructive">₦{Number(expense.total).toLocaleString()}</p>
+            </div>
+            <div className="space-y-3">
+              {Object.entries(expense.breakdown || {}).map(([key, value]) => (
+                <div key={key} className="flex justify-between items-center py-2 border-b border-border/50 last:border-0">
+                  <span className="text-sm font-medium text-muted-foreground capitalize">{key.replace(/_/g, " ")}</span>
+                  <span className="font-semibold text-foreground">₦{Number(value).toLocaleString()}</span>
+                </div>
+              ))}
+              {(!expense.breakdown || Object.keys(expense.breakdown).length === 0) && (
+                <div className="text-center text-muted-foreground text-sm py-4">No expenses found for this period.</div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
         <Card className="lg:col-span-2">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Users className="h-5 w-5 text-primary" /> Staff Salary Setup
             </CardTitle>
-            <CardDescription>Configure base monthly salaries for staff members. Changes are reflected in their earnings dashboards.</CardDescription>
+            <CardDescription>Configure base monthly salaries for staff members. This represents fixed expenses.</CardDescription>
           </CardHeader>
           <CardContent className="p-0">
             {usersLoading ? (
@@ -68,9 +140,9 @@ function FinancePage() {
             ) : users.length === 0 ? (
               <div className="p-8 text-center text-sm text-muted-foreground">No staff members found.</div>
             ) : (
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto max-h-[400px] overflow-y-auto">
                 <table className="w-full text-sm">
-                  <thead className="border-b border-border bg-muted/40 text-xs uppercase font-semibold text-muted-foreground">
+                  <thead className="sticky top-0 border-b border-border bg-muted text-xs uppercase font-semibold text-muted-foreground z-10">
                     <tr>
                       <th className="px-4 py-3 text-left">Staff Name</th>
                       <th className="px-4 py-3 text-left">Role</th>
@@ -88,7 +160,7 @@ function FinancePage() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="lg:col-span-1">
           <CardHeader><CardTitle>Wallet lookup</CardTitle></CardHeader>
           <CardContent className="space-y-4">
             <div className="flex flex-col gap-2">
