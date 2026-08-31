@@ -77,7 +77,7 @@ function DeliveriesPage() {
                         <td className="px-4 py-3 font-mono text-xs">#{String(id).slice(-6)}</td>
                         <td className="px-4 py-3 font-mono text-xs">
                           {orderId ? (
-                            <Link to="/orders/$id" params={{ id: String(orderId) }} className="text-primary hover:underline">
+                            <Link to="/orders" className="text-primary hover:underline">
                               #{String(orderId).slice(-6)}
                             </Link>
                           ) : "—"}
