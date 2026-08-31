@@ -18,6 +18,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedUsersRouteImport } from './routes/_authenticated/users'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedProductsRouteImport } from './routes/_authenticated/products'
+import { Route as AuthenticatedPermissionsRouteImport } from './routes/_authenticated/permissions'
 import { Route as AuthenticatedOrdersRouteImport } from './routes/_authenticated/orders'
 import { Route as AuthenticatedOrderFormsRouteImport } from './routes/_authenticated/order-forms'
 import { Route as AuthenticatedMediaBuyerRouteImport } from './routes/_authenticated/media-buyer'
@@ -78,6 +79,12 @@ const AuthenticatedProductsRoute = AuthenticatedProductsRouteImport.update({
   path: '/products',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedPermissionsRoute =
+  AuthenticatedPermissionsRouteImport.update({
+    id: '/permissions',
+    path: '/permissions',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedOrdersRoute = AuthenticatedOrdersRouteImport.update({
   id: '/orders',
   path: '/orders',
@@ -175,6 +182,7 @@ export interface FileRoutesByFullPath {
   '/media-buyer': typeof AuthenticatedMediaBuyerRoute
   '/order-forms': typeof AuthenticatedOrderFormsRouteWithChildren
   '/orders': typeof AuthenticatedOrdersRoute
+  '/permissions': typeof AuthenticatedPermissionsRoute
   '/products': typeof AuthenticatedProductsRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/users': typeof AuthenticatedUsersRoute
@@ -200,6 +208,7 @@ export interface FileRoutesByTo {
   '/media-buyer': typeof AuthenticatedMediaBuyerRoute
   '/order-forms': typeof AuthenticatedOrderFormsRouteWithChildren
   '/orders': typeof AuthenticatedOrdersRoute
+  '/permissions': typeof AuthenticatedPermissionsRoute
   '/products': typeof AuthenticatedProductsRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/users': typeof AuthenticatedUsersRoute
@@ -227,6 +236,7 @@ export interface FileRoutesById {
   '/_authenticated/media-buyer': typeof AuthenticatedMediaBuyerRoute
   '/_authenticated/order-forms': typeof AuthenticatedOrderFormsRouteWithChildren
   '/_authenticated/orders': typeof AuthenticatedOrdersRoute
+  '/_authenticated/permissions': typeof AuthenticatedPermissionsRoute
   '/_authenticated/products': typeof AuthenticatedProductsRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/users': typeof AuthenticatedUsersRoute
@@ -254,6 +264,7 @@ export interface FileRouteTypes {
     | '/media-buyer'
     | '/order-forms'
     | '/orders'
+    | '/permissions'
     | '/products'
     | '/settings'
     | '/users'
@@ -279,6 +290,7 @@ export interface FileRouteTypes {
     | '/media-buyer'
     | '/order-forms'
     | '/orders'
+    | '/permissions'
     | '/products'
     | '/settings'
     | '/users'
@@ -305,6 +317,7 @@ export interface FileRouteTypes {
     | '/_authenticated/media-buyer'
     | '/_authenticated/order-forms'
     | '/_authenticated/orders'
+    | '/_authenticated/permissions'
     | '/_authenticated/products'
     | '/_authenticated/settings'
     | '/_authenticated/users'
@@ -384,6 +397,13 @@ declare module '@tanstack/react-router' {
       path: '/products'
       fullPath: '/products'
       preLoaderRoute: typeof AuthenticatedProductsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/permissions': {
+      id: '/_authenticated/permissions'
+      path: '/permissions'
+      fullPath: '/permissions'
+      preLoaderRoute: typeof AuthenticatedPermissionsRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/orders': {
@@ -533,6 +553,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedMediaBuyerRoute: typeof AuthenticatedMediaBuyerRoute
   AuthenticatedOrderFormsRoute: typeof AuthenticatedOrderFormsRouteWithChildren
   AuthenticatedOrdersRoute: typeof AuthenticatedOrdersRoute
+  AuthenticatedPermissionsRoute: typeof AuthenticatedPermissionsRoute
   AuthenticatedProductsRoute: typeof AuthenticatedProductsRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedUsersRoute: typeof AuthenticatedUsersRoute
@@ -552,6 +573,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedMediaBuyerRoute: AuthenticatedMediaBuyerRoute,
   AuthenticatedOrderFormsRoute: AuthenticatedOrderFormsRouteWithChildren,
   AuthenticatedOrdersRoute: AuthenticatedOrdersRoute,
+  AuthenticatedPermissionsRoute: AuthenticatedPermissionsRoute,
   AuthenticatedProductsRoute: AuthenticatedProductsRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedUsersRoute: AuthenticatedUsersRoute,

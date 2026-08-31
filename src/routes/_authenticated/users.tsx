@@ -15,66 +15,6 @@ import {
 } from "@/components/ui/select";
 import { useState } from "react";
 import { toast } from "sonner";
-import { Loader2, UserPlus, Shield, MapPin, Trash2, Mail, Laptop, BarChart2 } from "lucide-react";
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import { EmptyState } from "@/components/empty-state";
-
-import { useAuth } from "@/lib/auth";
-import { UnauthorizedView } from "@/components/unauthorized-view";
-
-export const Route = createFileRoute("/_authenticated/users")({
-  head: () => ({ meta: [{ title: "Team Management — Ecom CRM" }] }),
-  component: UsersPage,
-});
-
-function UsersPage() {
-  const { user } = useAuth();
-  const qc = useQueryClient();
-
-  const { data: userData, isLoading: usersLoading } = useQuery({
-    queryKey: ["users"],
-    queryFn: async () => (await apiActions.users.list()).data,
-  });
-
-  const { data: locationData } = useQuery({
-    queryKey: ["locations"],
-    queryFn: async () => (await apiActions.locations.list()).data,
-  });
-
-  if (
-    user?.role !== "admin" &&
-    user?.role !== "dev" &&
-    user?.role !== "manager" &&
-    user?.role !== "accountant"
-  ) {
-    return <UnauthorizedView />;
-  }
-
-  const users: any[] = Array.isArray(userData) ? userData : userData?.data || [];
-import { createFileRoute } from "@tanstack/react-router";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { api, apiActions, ROLE_LABEL, type Role } from "@/lib/api";
-import { PageHeader } from "@/components/page-header";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { useState } from "react";
-import { toast } from "sonner";
 import { Loader2, UserPlus, Shield, MapPin, Trash2, Laptop, BarChart2 } from "lucide-react";
 import {
   Dialog,
