@@ -14,6 +14,16 @@ import { useAuth } from "@/lib/auth";
 import { UnauthorizedView } from "@/components/unauthorized-view";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { useMutation } from "@tanstack/react-query";
 
 export const Route = createFileRoute("/_authenticated/devices")({
   head: () => ({ meta: [{ title: "Device Management — Ecom CRM" }] }),
@@ -58,10 +68,13 @@ function DevicesPage() {
     <div>
       <div className="flex items-center justify-between">
         <PageHeader title="Device Management" description="Manage company devices and employee assignments." />
-        <Button variant="outline" onClick={handleSync} disabled={syncing}>
-          <RefreshCcw className={`h-4 w-4 mr-2 ${syncing ? 'animate-spin' : ''}`} />
-          Sync with Fleet
-        </Button>
+        <div className="flex gap-2">
+          <AddDeviceDialog onDone={() => queryClient.invalidateQueries({ queryKey: ["devices"] })} />
+          <Button variant="outline" onClick={handleSync} disabled={syncing}>
+            <RefreshCcw className={`h-4 w-4 mr-2 ${syncing ? 'animate-spin' : ''}`} />
+            Sync with Fleet
+          </Button>
+        </div>
       </div>
 
       <div className="mb-4 max-w-sm">
@@ -119,5 +132,107 @@ function DevicesPage() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+export function AddDeviceDialog({ onDone }: { onDone: () => void }) {
+  const [open, setOpen] = useState(false);
+  const [form, setForm] = useState({
+    name: "",
+    serialNumber: "",
+    type: "LAPTOP",
+    model: "",
+    osVersion: "",
+    costPrice: "",
+    purchaseDate: "",
+  });
+
+  const create = useMutation({
+    mutationFn: async () =>
+      (await api.post("/devices", {
+        ...form,
+        costPrice: Number(form.costPrice) || 0,
+        purchaseDate: form.purchaseDate ? new Date(form.purchaseDate).toISOString() : new Date().toISOString(),
+      })).data,
+    onSuccess: () => {
+      toast.success("Device added successfully");
+      setOpen(false);
+      setForm({
+        name: "",
+        serialNumber: "",
+        type: "LAPTOP",
+        model: "",
+        osVersion: "",
+        costPrice: "",
+        purchaseDate: "",
+      });
+      onDone();
+    },
+    onError: (e: any) => toast.error(e.friendlyMessage || "Failed to add device"),
+  });
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button>Add Device</Button>
+      </DialogTrigger>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Add New Device</DialogTitle>
+        </DialogHeader>
+        <div className="grid gap-4 py-2">
+          <div className="grid gap-2">
+            <Label>Name</Label>
+            <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Macbook Pro M3" />
+          </div>
+          <div className="grid gap-2">
+            <Label>Serial Number</Label>
+            <Input value={form.serialNumber} onChange={(e) => setForm({ ...form, serialNumber: e.target.value })} placeholder="C02..." />
+          </div>
+          <div className="grid gap-2">
+            <Label>Type</Label>
+            <select
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              value={form.type}
+              onChange={(e) => setForm({ ...form, type: e.target.value })}
+            >
+              <option value="LAPTOP">Laptop</option>
+              <option value="MOBILE_PHONE">Mobile Phone</option>
+              <option value="ROUTER">Router</option>
+              <option value="CAR">Car</option>
+              <option value="BIKE">Bike</option>
+              <option value="HEADPHONES">Headphones</option>
+              <option value="OTHER">Other</option>
+            </select>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div className="grid gap-2">
+              <Label>Model</Label>
+              <Input value={form.model} onChange={(e) => setForm({ ...form, model: e.target.value })} placeholder="14-inch 2023" />
+            </div>
+            <div className="grid gap-2">
+              <Label>OS Version</Label>
+              <Input value={form.osVersion} onChange={(e) => setForm({ ...form, osVersion: e.target.value })} placeholder="Sonoma 14.2" />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div className="grid gap-2">
+              <Label>Cost Price (₦)</Label>
+              <Input type="number" value={form.costPrice} onChange={(e) => setForm({ ...form, costPrice: e.target.value })} placeholder="1500000" />
+            </div>
+            <div className="grid gap-2">
+              <Label>Purchase Date</Label>
+              <Input type="date" value={form.purchaseDate} onChange={(e) => setForm({ ...form, purchaseDate: e.target.value })} />
+            </div>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button onClick={() => create.mutate()} disabled={!form.name || !form.serialNumber || create.isPending}>
+            {create.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+            Save Device
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

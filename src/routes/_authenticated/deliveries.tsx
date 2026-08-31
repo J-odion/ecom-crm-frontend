@@ -182,6 +182,12 @@ function AssignDeliveryDialog({ onDone }: { onDone: () => void }) {
   const [orderId, setOrderId] = useState("");
   const [agentId, setAgentId] = useState("");
 
+  const { data: ordersData } = useQuery({
+    queryKey: ["orders-for-delivery"],
+    queryFn: async () => (await api.get("/orders")).data,
+  });
+  const orders: any[] = Array.isArray(ordersData) ? ordersData : ordersData?.data || [];
+
   const assign = useMutation({
     mutationFn: async () =>
       (await api.post("/logistics/deliveries/assign", { orderId, deliveryAgentId: agentId })).data,
@@ -206,12 +212,23 @@ function AssignDeliveryDialog({ onDone }: { onDone: () => void }) {
         </DialogHeader>
         <div className="space-y-3">
           <div>
-            <Label className="mb-1.5 block">Order ID</Label>
-            <Input value={orderId} onChange={(e) => setOrderId(e.target.value)} placeholder="60d0fe4f5311236168a109ca" />
+            <Label className="mb-1.5 block">Order</Label>
+            <select
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              value={orderId}
+              onChange={(e) => setOrderId(e.target.value)}
+            >
+              <option value="">Select an order...</option>
+              {orders.map((o) => (
+                <option key={o._id || o.id} value={o._id || o.id}>
+                  {o.customerName || `Order #${String(o._id || o.id).slice(-6)}`}
+                </option>
+              ))}
+            </select>
           </div>
           <div>
             <Label className="mb-1.5 block">Delivery agent ID</Label>
-            <Input value={agentId} onChange={(e) => setAgentId(e.target.value)} placeholder="60d0fe4f5311236168a109ca" />
+            <Input value={agentId} onChange={(e) => setAgentId(e.target.value)} placeholder="Enter agent ID" />
           </div>
         </div>
         <DialogFooter>

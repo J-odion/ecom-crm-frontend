@@ -129,6 +129,13 @@ function LocationCard({ location }: { location: any }) {
   );
 }
 
+const NIGERIAN_STATES = [
+  "Abia", "Adamawa", "Akwa Ibom", "Anambra", "Bauchi", "Bayelsa", "Benue", "Borno",
+  "Cross River", "Delta", "Ebonyi", "Edo", "Ekiti", "Enugu", "FCT - Abuja", "Gombe", "Imo",
+  "Jigawa", "Kaduna", "Kano", "Katsina", "Kebbi", "Kogi", "Kwara", "Lagos", "Nasarawa",
+  "Niger", "Ogun", "Ondo", "Osun", "Oyo", "Plateau", "Rivers", "Sokoto", "Taraba", "Yobe", "Zamfara"
+];
+
 function CreateLocationDialog({ onDone }: { onDone: () => void }) {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
@@ -170,13 +177,20 @@ function CreateLocationDialog({ onDone }: { onDone: () => void }) {
             />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="loc-address">Address</Label>
-            <Input
-              id="loc-address"
-              placeholder="e.g. 123 Ikeja Way, Lagos"
+            <Label htmlFor="loc-state">State</Label>
+            <select
+              id="loc-state"
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
               value={address}
               onChange={(e) => setAddress(e.target.value)}
-            />
+            >
+              <option value="">Select a state...</option>
+              {NIGERIAN_STATES.map((state) => (
+                <option key={state} value={state}>
+                  {state}
+                </option>
+              ))}
+            </select>
           </div>
           <div className="space-y-1.5">
             <Label>Type</Label>
@@ -196,7 +210,7 @@ function CreateLocationDialog({ onDone }: { onDone: () => void }) {
           </div>
         </div>
         <DialogFooter>
-          <Button onClick={() => create.mutate()} disabled={!name || create.isPending}>
+          <Button onClick={() => create.mutate()} disabled={!name || !address || create.isPending}>
             {create.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
             Create Location
           </Button>

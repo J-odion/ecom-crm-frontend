@@ -46,10 +46,14 @@ function CommissionRulesPage() {
               {rules.map((r, i) => (
                 <li key={r._id || r.id || i} className="flex items-center justify-between gap-4 px-4 py-4">
                   <div>
-                    <p className="font-medium">{r.name || `Rule ${i + 1}`}</p>
-                    <p className="text-xs text-muted-foreground">{r.role || r.appliesTo || "—"} · {r.type || "fixed"}</p>
+                    <p className="font-medium">{r.name || r.ruleType || `Rule ${i + 1}`}</p>
+                    <p className="text-xs text-muted-foreground">Roles: {(r.roles || []).join(", ") || r.role || "All"} · {r.amountType || r.type || "PERCENTAGE"}</p>
                   </div>
-                  <p className="font-semibold text-primary">{r.percentage ? `${r.percentage}%` : r.amount ? `₦${Number(r.amount).toLocaleString()}` : "—"}</p>
+                  <p className="font-semibold text-primary">
+                    {r.amountType === "FIXED" || r.type === "fixed" || r.amount 
+                      ? `₦${Number(r.value || r.amount).toLocaleString()}` 
+                      : `${r.value || r.percentage}%`}
+                  </p>
                 </li>
               ))}
             </ul>
@@ -62,16 +66,15 @@ function CommissionRulesPage() {
 
 function NewRuleDialog({ onDone }: { onDone: () => void }) {
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({ name: "", role: "sales_agent", type: "percentage", percentage: "", amount: "", description: "" });
+  const [form, setForm] = useState({ ruleType: "GLOBAL", amountType: "PERCENTAGE", value: "", roles: [] as string[] });
+  
   const create = useMutation({
     mutationFn: async () =>
       (await api.post("/commission-rules", {
-        name: form.name,
-        role: form.role,
-        type: form.type,
-        percentage: form.percentage ? Number(form.percentage) : undefined,
-        amount: form.amount ? Number(form.amount) : undefined,
-        description: form.description || undefined,
+        ruleType: form.ruleType,
+        amountType: form.amountType,
+        value: Number(form.value) || 0,
+        roles: form.roles,
       })).data,
     onSuccess: () => {
       toast.success("Rule created");
@@ -81,21 +84,68 @@ function NewRuleDialog({ onDone }: { onDone: () => void }) {
     onError: (e: any) => toast.error(e?.response?.data?.message || "Failed"),
   });
 
+  const handleRoleToggle = (role: string) => {
+    setForm(prev => ({
+      ...prev,
+      roles: prev.roles.includes(role) 
+        ? prev.roles.filter(r => r !== role)
+        : [...prev.roles, role]
+    }));
+  };
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild><Button>New rule</Button></DialogTrigger>
       <DialogContent>
         <DialogHeader><DialogTitle>New commission rule</DialogTitle></DialogHeader>
-        <div className="grid gap-3 sm:grid-cols-2">
-          <div className="sm:col-span-2"><Label className="mb-1.5 block">Name</Label><Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></div>
-          <div><Label className="mb-1.5 block">Role</Label><Input value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })} /></div>
-          <div><Label className="mb-1.5 block">Type</Label><Input value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })} /></div>
-          <div><Label className="mb-1.5 block">Percentage</Label><Input type="number" value={form.percentage} onChange={(e) => setForm({ ...form, percentage: e.target.value })} /></div>
-          <div><Label className="mb-1.5 block">Fixed amount (₦)</Label><Input type="number" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} /></div>
-          <div className="sm:col-span-2"><Label className="mb-1.5 block">Description</Label><Textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} /></div>
+        <div className="grid gap-4 py-2">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label className="mb-1.5 block">Rule Type</Label>
+              <select
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                value={form.ruleType}
+                onChange={(e) => setForm({ ...form, ruleType: e.target.value })}
+              >
+                <option value="GLOBAL">Global</option>
+                <option value="PRODUCT_SPECIFIC">Product Specific</option>
+              </select>
+            </div>
+            <div>
+              <Label className="mb-1.5 block">Amount Type</Label>
+              <select
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                value={form.amountType}
+                onChange={(e) => setForm({ ...form, amountType: e.target.value })}
+              >
+                <option value="PERCENTAGE">Percentage</option>
+                <option value="FIXED">Fixed Amount</option>
+              </select>
+            </div>
+          </div>
+          <div>
+            <Label className="mb-1.5 block">Value ({form.amountType === "PERCENTAGE" ? "%" : "₦"})</Label>
+            <Input type="number" value={form.value} onChange={(e) => setForm({ ...form, value: e.target.value })} />
+          </div>
+          <div>
+            <Label className="mb-2 block">Roles (Select multiple)</Label>
+            <div className="grid grid-cols-2 gap-2 border rounded-md p-3">
+              {["sales_agent", "media_buyer", "customer_service", "logistics_manager", "delivery_agent", "accountant"].map(role => (
+                <label key={role} className="flex items-center space-x-2 text-sm">
+                  <input 
+                    type="checkbox" 
+                    checked={form.roles.includes(role)} 
+                    onChange={() => handleRoleToggle(role)}
+                    className="rounded border-gray-300 text-primary focus:ring-primary"
+                  />
+                  <span>{role.replace('_', ' ')}</span>
+                </label>
+              ))}
+            </div>
+          </div>
         </div>
         <DialogFooter>
-          <Button onClick={() => create.mutate()} disabled={!form.name || create.isPending}>
+          <Button onClick={() => create.mutate()} disabled={!form.value || form.roles.length === 0 || create.isPending}>
             {create.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />} Create
           </Button>
         </DialogFooter>
@@ -103,3 +153,4 @@ function NewRuleDialog({ onDone }: { onDone: () => void }) {
     </Dialog>
   );
 }
+

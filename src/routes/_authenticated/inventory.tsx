@@ -94,22 +94,19 @@ export function NewProductDialog({
   triggerLabel?: string;
 }) {
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({ name: "", stock: 0, cost: "", price: "", description: "" });
+  const [form, setForm] = useState({ name: "", baseCost: "", sellingPrice: "", description: "" });
   const create = useMutation({
     mutationFn: async () =>
       (await api.post(endpoint, {
         name: form.name,
-        productName: form.name,
-        stock: Number(form.stock) || 0,
-        quantity: Number(form.stock) || 0,
-        cost: form.cost ? Number(form.cost) : undefined,
-        price: form.price ? Number(form.price) : undefined,
+        baseCost: form.baseCost ? Number(form.baseCost) : undefined,
+        sellingPrice: form.sellingPrice ? Number(form.sellingPrice) : undefined,
         description: form.description || undefined,
       })).data,
     onSuccess: () => {
       toast.success("Product created");
       setOpen(false);
-      setForm({ name: "", stock: 0, cost: "", price: "", description: "" });
+      setForm({ name: "", baseCost: "", sellingPrice: "", description: "" });
       onDone();
     },
     onError: (e: any) => toast.error(e.friendlyMessage || "Failed"),
@@ -124,10 +121,9 @@ export function NewProductDialog({
         <DialogHeader><DialogTitle>New product</DialogTitle></DialogHeader>
         <div className="grid gap-3 sm:grid-cols-2">
           <div className="sm:col-span-2"><Label className="mb-1.5 block">Name</Label><Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></div>
-          <div><Label className="mb-1.5 block">Stock</Label><Input type="number" value={form.stock} onChange={(e) => setForm({ ...form, stock: Number(e.target.value) })} /></div>
-          <div><Label className="mb-1.5 block">Cost (₦)</Label><Input type="number" value={form.cost} onChange={(e) => setForm({ ...form, cost: e.target.value })} /></div>
-          <div><Label className="mb-1.5 block">Price (₦)</Label><Input type="number" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} /></div>
-          <div className="sm:col-span-2"><Label className="mb-1.5 block">Description</Label><Textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} /></div>
+          <div><Label className="mb-1.5 block">Base Cost (₦)</Label><Input type="number" value={form.baseCost} onChange={(e) => setForm({ ...form, baseCost: e.target.value })} /></div>
+          <div><Label className="mb-1.5 block">Selling Price (₦)</Label><Input type="number" value={form.sellingPrice} onChange={(e) => setForm({ ...form, sellingPrice: e.target.value })} /></div>
+          <div className="sm:col-span-2"><Label className="mb-1.5 block">Description (Optional)</Label><Textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} /></div>
         </div>
         <DialogFooter>
           <Button onClick={() => create.mutate()} disabled={!form.name || create.isPending}>
@@ -142,14 +138,20 @@ export function NewProductDialog({
 
 function StockInDialog({ items, onDone }: { items: any[]; onDone: () => void }) {
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({ productId: "", quantity: 0, notes: "" });
+  const [form, setForm] = useState({ productId: "", locationId: "", quantity: 0, notes: "" });
+
+  const { data: locData } = useQuery({
+    queryKey: ["locations"],
+    queryFn: async () => (await api.get("/locations")).data,
+  });
+  const locations: any[] = Array.isArray(locData) ? locData : locData?.data || [];
 
   const mut = useMutation({
     mutationFn: async () => (await api.post("/inventory/in", form)).data,
     onSuccess: () => {
       toast.success("Stock updated");
       setOpen(false);
-      setForm({ productId: "", quantity: 0, notes: "" });
+      setForm({ productId: "", locationId: "", quantity: 0, notes: "" });
       onDone();
     },
     onError: (e: any) => toast.error(e.friendlyMessage || "Failed"),
@@ -172,11 +174,22 @@ function StockInDialog({ items, onDone }: { items: any[]; onDone: () => void }) 
               {items.map(p => <option key={p._id || p.id} value={p._id || p.id}>{p.name || p.productName}</option>)}
             </select>
           </div>
+          <div>
+            <Label className="mb-1.5 block">Location</Label>
+            <select 
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              value={form.locationId} 
+              onChange={(e) => setForm({ ...form, locationId: e.target.value })}
+            >
+              <option value="">Select location...</option>
+              {locations.map(l => <option key={l._id || l.id} value={l._id || l.id}>{l.name}</option>)}
+            </select>
+          </div>
           <div><Label className="mb-1.5 block">Quantity</Label><Input type="number" value={form.quantity} onChange={(e) => setForm({ ...form, quantity: Number(e.target.value) })} /></div>
           <div><Label className="mb-1.5 block">Notes</Label><Textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} /></div>
         </div>
         <DialogFooter>
-          <Button onClick={() => mut.mutate()} disabled={!form.productId || !form.quantity || mut.isPending}>
+          <Button onClick={() => mut.mutate()} disabled={!form.productId || !form.locationId || !form.quantity || mut.isPending}>
             {mut.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
             Confirm
           </Button>
@@ -188,17 +201,23 @@ function StockInDialog({ items, onDone }: { items: any[]; onDone: () => void }) 
 
 function StockTransferDialog({ items, onDone }: { items: any[]; onDone: () => void }) {
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({ productId: "", from: "", to: "", quantity: 0 });
+  const [form, setForm] = useState({ productId: "", fromLocationId: "", toLocationId: "", quantity: 0, notes: "" });
+
+  const { data: locData } = useQuery({
+    queryKey: ["locations"],
+    queryFn: async () => (await api.get("/locations")).data,
+  });
+  const locations: any[] = Array.isArray(locData) ? locData : locData?.data || [];
 
   const mut = useMutation({
     mutationFn: async () => (await api.post("/inventory/transfer", form)).data,
     onSuccess: () => {
       toast.success("Transfer recorded");
       setOpen(false);
-      setForm({ productId: "", from: "", to: "", quantity: 0 });
+      setForm({ productId: "", fromLocationId: "", toLocationId: "", quantity: 0, notes: "" });
       onDone();
     },
-    onError: (e: any) => toast.error(e?.response?.data?.message || "Failed"),
+    onError: (e: any) => toast.error(e?.response?.data?.message || e.friendlyMessage || "Failed"),
   });
 
   return (
@@ -219,13 +238,34 @@ function StockTransferDialog({ items, onDone }: { items: any[]; onDone: () => vo
             </select>
           </div>
           <div className="grid grid-cols-2 gap-2">
-            <div><Label className="mb-1.5 block">From</Label><Input value={form.from} onChange={(e) => setForm({ ...form, from: e.target.value })} placeholder="Warehouse A" /></div>
-            <div><Label className="mb-1.5 block">To</Label><Input value={form.to} onChange={(e) => setForm({ ...form, to: e.target.value })} placeholder="Warehouse B" /></div>
+            <div>
+              <Label className="mb-1.5 block">From Location</Label>
+              <select 
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                value={form.fromLocationId} 
+                onChange={(e) => setForm({ ...form, fromLocationId: e.target.value })}
+              >
+                <option value="">Select location...</option>
+                {locations.map(l => <option key={l._id || l.id} value={l._id || l.id}>{l.name}</option>)}
+              </select>
+            </div>
+            <div>
+              <Label className="mb-1.5 block">To Location</Label>
+              <select 
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                value={form.toLocationId} 
+                onChange={(e) => setForm({ ...form, toLocationId: e.target.value })}
+              >
+                <option value="">Select location...</option>
+                {locations.map(l => <option key={l._id || l.id} value={l._id || l.id}>{l.name}</option>)}
+              </select>
+            </div>
           </div>
           <div><Label className="mb-1.5 block">Quantity</Label><Input type="number" value={form.quantity} onChange={(e) => setForm({ ...form, quantity: Number(e.target.value) })} /></div>
+          <div><Label className="mb-1.5 block">Notes</Label><Input value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} /></div>
         </div>
         <DialogFooter>
-          <Button onClick={() => mut.mutate()} disabled={!form.productId || !form.quantity || mut.isPending}>
+          <Button onClick={() => mut.mutate()} disabled={!form.productId || !form.fromLocationId || !form.toLocationId || !form.quantity || mut.isPending}>
             {mut.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
             Transfer
           </Button>
